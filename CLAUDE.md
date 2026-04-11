@@ -340,6 +340,34 @@ ANTHROPIC_API_KEY=...          # pouze server-side, nikdy NEXT_PUBLIC_
 
 ---
 
+## Databázové migrace — jak je spouštět
+
+Migrace jsou v `supabase/migrations/`. Supabase CLI je dostupné přes `npx supabase`.
+
+**Claude Code je spouští přímo** — bez čekání na uživatele — tímto příkazem:
+
+```bash
+npx supabase db push --db-url "postgresql://postgres.[ref]:[heslo]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+```
+
+Kde:
+- `[ref]` = project reference z `NEXT_PUBLIC_SUPABASE_URL` (část mezi `https://` a `.supabase.co`)
+- `[heslo]` = DB heslo z `.env.local` nebo od uživatele (klíč `SUPABASE_DB_PASSWORD`)
+
+**Workflow pro nové migrace:**
+1. Vytvoř soubor `supabase/migrations/NNN_nazev.sql`
+2. Spusť `npx supabase db push --db-url "..."` přímo
+3. Commitni migraci do gitu
+
+**Přidej do `.env.local`** (nikdy necommitovat):
+```bash
+SUPABASE_DB_PASSWORD=heslo-z-dashboardu
+```
+
+Pak lze connection string sestavit programaticky z env vars.
+
+---
+
 ## i18n a lokalizace
 
 - **Jazyk UI:** čeština všude
