@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>hospoda.pro - Scan &amp; Edit Menu</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&amp;family=Space+Grotesk:wght@400;700&amp;family=Work+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#e8a020",
+                        "on-tertiary": "#00344f",
+                        "on-error": "#690005",
+                        "primary-fixed": "#ffddb2",
+                        "on-surface-variant": "#d6c4ae",
+                        "on-tertiary-fixed": "#001e30",
+                        "inverse-primary": "#815500",
+                        "tertiary-fixed-dim": "#8dcdff",
+                        "surface-tint": "#ffb94c",
+                        "tertiary-container": "#4ab7fc",
+                        "tertiary-fixed": "#cae6ff",
+                        "inverse-surface": "#e4e2de",
+                        "secondary-fixed": "#e7e2d8",
+                        "surface-container-high": "#292a28",
+                        "surface-container-highest": "#343533",
+                        "primary-fixed-dim": "#ffb94c",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#004668",
+                        "surface": "#131412",
+                        "error": "#ffb4ab",
+                        "on-surface": "#e4e2de",
+                        "primary": "#ffbe5b",
+                        "on-error-container": "#ffdad6",
+                        "outline": "#9e8e7a",
+                        "on-secondary-fixed": "#1d1b16",
+                        "background": "#131412",
+                        "on-primary-fixed-variant": "#624000",
+                        "inverse-on-surface": "#30312e",
+                        "on-primary-container": "#5b3b00",
+                        "surface-dim": "#131412",
+                        "surface-container-lowest": "#0d0e0d",
+                        "surface-container-low": "#1b1c1a",
+                        "on-background": "#e4e2de",
+                        "on-primary": "#442b00",
+                        "secondary-container": "#494740",
+                        "secondary-fixed-dim": "#cbc6bd",
+                        "tertiary": "#94d0ff",
+                        "on-secondary-fixed-variant": "#494740",
+                        "on-secondary-container": "#b9b5ac",
+                        "on-primary-fixed": "#291800",
+                        "on-secondary": "#32302a",
+                        "secondary": "#cbc6bd",
+                        "surface-container": "#1f201e",
+                        "outline-variant": "#514534",
+                        "on-tertiary-fixed-variant": "#004b70",
+                        "surface-variant": "#343533",
+                        "surface-bright": "#393937"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Work Sans"],
+                        "label": ["Space Grotesk"],
+                        "mono": ["Geist Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .beer-drop {
+            animation: bounce 0.6s infinite alternate;
+        }
+        .beer-drop:nth-child(2) { animation-delay: 0.2s; }
+        .beer-drop:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-12px); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-12 z-50 bg-zinc-950/60 backdrop-blur-md border-b-2 border-zinc-800/20 flex justify-between items-center px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500" data-icon="local_pub">local_bar</span>
+<h1 class="text-amber-500 font-bold tracking-tighter text-xl">hospoda.pro</h1>
+</div>
+<button class="hover:bg-zinc-800/50 transition-colors p-2 rounded-full active:scale-95 transition-transform duration-150 text-zinc-400">
+<span class="material-symbols-outlined" data-icon="dark_mode">dark_mode</span>
+</button>
+</header>
+<main class="pt-12 px-4 max-w-2xl mx-auto space-y-6">
+<!-- Header Section -->
+<section class="mt-8 text-center">
+<h2 class="font-headline font-bold text-3xl tracking-tight text-on-surface mb-2">Import Menu</h2>
+<p class="text-on-surface-variant font-body">Digitize your beverage list in seconds.</p>
+</section>
+<!-- Split Screen Buttons -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[530px] md:h-[400px]">
+<!-- Camera Button -->
+<button class="group relative overflow-hidden rounded-3xl border-2 border-outline-variant bg-surface-container-low flex flex-col items-center justify-center p-8 transition-all hover:border-primary active:scale-95">
+<div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity bg-cover bg-center" data-alt="interior of a cozy dimly lit european pub with wooden tables and atmospheric amber lighting" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC4bD-wl9LagUJHrjcaFv6fdiIFg1nycdC_PKhQBym3x39ndgKqSedx3VAXVKZGd1V7UjRGN2WXB_etnJX_zeL5hLSRbwHIyvRJRZjoQLiIL1rcz5ZHmj56JcZpZWJoHLBmzez_YOZxMXNiG0Wo2NJWvc1uZu7WV1uSITNs5PHz2bwhER0lp3aL2ebJrsGgmhExkbIAFTLCMFhs0NsQ2yjClQTUJc1GSJu92gm2a4iy_9zCSlfZO9BiuVUyEXrFKhGfumScLg86DpCe')"></div>
+<div class="z-10 bg-primary-container/20 p-6 rounded-full mb-4">
+<span class="material-symbols-outlined text-primary text-5xl" data-icon="photo_camera">photo_camera</span>
+</div>
+<span class="z-10 font-headline font-bold text-xl text-on-surface">Take a photo of the menu</span>
+</button>
+<!-- Gallery Button -->
+<button class="group relative overflow-hidden rounded-3xl border-2 border-outline-variant bg-surface-container-low flex flex-col items-center justify-center p-8 transition-all hover:border-primary active:scale-95">
+<div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity bg-cover bg-center" data-alt="close up of a vintage paper menu with elegant typography on a dark wooden background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBjgTqvccFkiDF9qQrkwVCtLcD4K3Fdv6xmVsRaJ1xXcXECSUQx7URq3kmxfiaOfqY9KjIz67WjLDX6KwosK1bp4zOXuNUEAI8zFbrBKRPCo1SGqHDPUTDfNc-u2mwNYwUF1uayqa7biC_cPsPjUp1xmTT4pzi-wNKLWk-MPNY7mcQJ2sRXum9n75TBbetrFZhtVVkZktpqshCT7jCSGvRQSmpU8oWcNsOD19zvJboXbxCY5qGXwt0fje_Yz6jtlA3wckFHGBXGRzRf')"></div>
+<div class="z-10 bg-secondary-container/20 p-6 rounded-full mb-4">
+<span class="material-symbols-outlined text-secondary text-5xl" data-icon="image">image</span>
+</div>
+<span class="z-10 font-headline font-bold text-xl text-on-surface">Upload from gallery</span>
+</button>
+</div>
+<!-- Manual Link -->
+<div class="text-center pb-8">
+<button class="text-primary font-label uppercase tracking-widest text-xs hover:underline underline-offset-4 transition-all">
+                Add manually
+            </button>
+</div>
+</main>
+<!-- Processing Overlay (Simulated State) -->
+<div class="fixed inset-0 z-[60] bg-surface-container-lowest/90 backdrop-blur-xl flex flex-col items-center justify-center">
+<div class="flex space-x-4 mb-8">
+<span class="material-symbols-outlined text-primary text-4xl beer-drop" data-icon="water_drop" data-weight="fill" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span class="material-symbols-outlined text-primary text-4xl beer-drop" data-icon="water_drop" data-weight="fill" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span class="material-symbols-outlined text-primary text-4xl beer-drop" data-icon="water_drop" data-weight="fill" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<p class="font-headline font-bold text-xl text-on-surface tracking-tight">Recognizing menu items...</p>
+<p class="font-mono text-xs text-outline mt-2 uppercase tracking-tighter">AI Analysis in progress</p>
+</div>
+<!-- Result Modal (Hidden by logic usually, but visible for this design task) -->
+<div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+<div class="bg-surface-container-high w-full max-w-lg rounded-xl border-2 border-outline-variant shadow-2xl flex flex-col max-h-[751px] relative">
+<div class="p-6 border-b-2 border-outline-variant">
+<h3 class="font-headline font-bold text-2xl text-on-surface">Items Found (8)</h3>
+<p class="font-body text-sm text-on-surface-variant">Review and confirm recognized beverages.</p>
+</div>
+<div class="overflow-y-auto flex-1 p-2 space-y-2">
+<!-- Checklist Row -->
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low border border-transparent hover:border-outline-variant transition-all">
+<input checked="" class="w-6 h-6 rounded-lg bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" type="checkbox"/>
+<div class="flex-1">
+<p class="font-headline font-bold text-on-surface">Pilsner Urquell 12°</p>
+<p class="font-mono text-[10px] text-primary uppercase tracking-widest">Draught Lager</p>
+</div>
+<div class="text-right flex gap-4">
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-outline uppercase">Small</span>
+<span class="font-mono font-bold text-on-surface">39.00</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-outline uppercase">Large</span>
+<span class="font-mono font-bold text-on-surface">54.00</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low border border-transparent hover:border-outline-variant transition-all">
+<input checked="" class="w-6 h-6 rounded-lg bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" type="checkbox"/>
+<div class="flex-1">
+<p class="font-headline font-bold text-on-surface">Velkopopovický Kozel</p>
+<p class="font-mono text-[10px] text-primary uppercase tracking-widest">Dark Beer</p>
+</div>
+<div class="text-right flex gap-4">
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-outline uppercase">Small</span>
+<span class="font-mono font-bold text-on-surface">32.00</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-outline uppercase">Large</span>
+<span class="font-mono font-bold text-on-surface">48.00</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low border border-transparent hover:border-outline-variant transition-all">
+<input checked="" class="w-6 h-6 rounded-lg bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" type="checkbox"/>
+<div class="flex-1">
+<p class="font-headline font-bold text-on-surface">Kingswood Apple Cider</p>
+<p class="font-mono text-[10px] text-primary uppercase tracking-widest">Bottled</p>
+</div>
+<div class="text-right flex gap-4">
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-outline uppercase">0.33l</span>
+<span class="font-mono font-bold text-on-surface">59.00</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-surface-container-low border border-transparent hover:border-outline-variant transition-all opacity-60">
+<input class="w-6 h-6 rounded-lg bg-surface border-outline-variant text-primary focus:ring-primary focus:ring-offset-surface" type="checkbox"/>
+<div class="flex-1">
+<p class="font-headline font-bold text-on-surface">Goulash with Bread</p>
+<p class="font-mono text-[10px] text-error uppercase tracking-widest">Food - Auto Excluded</p>
+</div>
+<div class="text-right flex gap-4">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-on-surface">185.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Action Footer -->
+<div class="p-6 bg-surface-container-high border-t-2 border-outline-variant rounded-b-xl">
+<button class="w-full bg-primary py-4 rounded-2xl border-2 border-on-primary-container text-on-primary-container font-headline font-bold text-lg flex items-center justify-center gap-2 active:translate-y-1 transition-all shadow-xl">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                    Add Selected Items
+                </button>
+</div>
+</div>
+</div>
+<!-- BottomNavBar (Hidden on desktop in top-level but shown here for navigation context) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 bg-zinc-950/60 backdrop-blur-md h-16 pb-safe border-t-2 border-zinc-800/20">
+<button class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+</button>
+<button class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+</button>
+<button class="flex items-center justify-center bg-amber-500/10 text-amber-500 rounded-2xl p-3 active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="format_list_bulleted">format_list_bulleted</span>
+</button>
+<button class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</nav>
+</body></html>

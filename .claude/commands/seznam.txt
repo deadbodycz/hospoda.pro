@@ -1,0 +1,12 @@
+kompletní seznam:
+
+Příkaz	          Co dělá
+/start	  -  Přečte CLAUDE.md a shrne stav projektu
+/go	  -  Přečte CLAUDE.md + prompt.txt, přejde do Plan Mode
+/aktualizuj	Aktualizuje CLAUDE.md dle posledních git změn
+/check	  -  Build + TypeScript check + kontrola PWA assets
+/commit	  -  Conventional commit s potvrzením před pushem
+/deploy	  -  Build → push na main → Vercel deploy
+/db	  -  Kontrola/generování Supabase migrací
+/design	  -  Porovná implementaci s Stitch předlohou (onboarding/scan/users/counter)
+/icons	  -  Generuje PWA ikony (icon-192.png, icon-512.png)

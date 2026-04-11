@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="cs"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>hospoda.pro | Draught Counter</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&amp;family=Geist:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-container": "#e8a020",
+                        "outline": "#9e8e7a",
+                        "background": "#131412",
+                        "tertiary-fixed": "#cae6ff",
+                        "on-surface": "#e4e2de",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#4ab7fc",
+                        "primary-fixed-dim": "#ffb94c",
+                        "secondary-fixed-dim": "#cbc6bd",
+                        "on-primary-fixed": "#291800",
+                        "surface-tint": "#ffb94c",
+                        "on-background": "#e4e2de",
+                        "primary": "#ffbe5b",
+                        "outline-variant": "#514534",
+                        "secondary-fixed": "#e7e2d8",
+                        "surface-container": "#1f201e",
+                        "inverse-surface": "#e4e2de",
+                        "secondary": "#cbc6bd",
+                        "on-tertiary": "#00344f",
+                        "on-secondary-container": "#b9b5ac",
+                        "tertiary": "#94d0ff",
+                        "surface-dim": "#131412",
+                        "error": "#ffb4ab",
+                        "surface-bright": "#393937",
+                        "surface-variant": "#343533",
+                        "on-secondary": "#32302a",
+                        "primary-fixed": "#ffddb2",
+                        "on-secondary-fixed-variant": "#494740",
+                        "inverse-primary": "#815500",
+                        "on-primary": "#442b00",
+                        "on-surface-variant": "#d6c4ae",
+                        "on-tertiary-container": "#004668",
+                        "on-primary-fixed-variant": "#624000",
+                        "inverse-on-surface": "#30312e",
+                        "on-primary-container": "#5b3b00",
+                        "on-error": "#690005",
+                        "surface-container-high": "#292a28",
+                        "secondary-container": "#494740",
+                        "on-tertiary-fixed-variant": "#004b70",
+                        "surface": "#131412",
+                        "surface-container-low": "#1b1c1a",
+                        "on-secondary-fixed": "#1d1b16",
+                        "tertiary-fixed-dim": "#8dcdff",
+                        "surface-container-lowest": "#0d0e0d",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#343533",
+                        "on-tertiary-fixed": "#001e30"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        sans: ['Geist', 'sans-serif'],
+                        mono: ['Geist Mono', 'monospace'],
+                        headline: ['Geist', 'sans-serif'],
+                        body: ['Geist', 'sans-serif'],
+                        label: ['Geist Mono', 'monospace']
+                    },
+                    backgroundImage: {
+                        'beer-gradient': 'linear-gradient(180deg, #ffbe5b 0%, #e8a020 100%)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .brewery-shadow {
+            box-shadow: 0 4px 24px rgba(232, 160, 32, 0.15);
+        }
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-sans selection:bg-primary/30">
+<!-- Header (Shared Component: TopAppBar logic) -->
+<header class="fixed top-0 w-full z-50 bg-zinc-900/60 backdrop-blur-md border-b-2 border-zinc-800/20 h-16 flex items-center px-4 justify-between">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="text-on-surface font-bold tracking-tight text-lg leading-tight">U Zlatého Kohouta</h1>
+<span class="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">v provozu</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined text-zinc-400">dark_mode</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined text-zinc-400">more_vert</span>
+</button>
+</div>
+</header>
+<main class="pt-20 pb-48 px-4 max-w-md mx-auto">
+<!-- Drink Selection Chips -->
+<section class="flex overflow-x-auto gap-2 pb-6 pt-2 sticky top-16 bg-background/95 backdrop-blur-sm z-40 -mx-4 px-4">
+<button class="flex-shrink-0 px-5 py-2.5 bg-beer-gradient text-on-primary-container font-bold rounded-full border-2 border-primary-container shadow-lg active:scale-95 transition-transform flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-weight="fill">sports_bar</span>
+                Pilsner 0,5l · 52 Kč
+            </button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container border-2 border-outline-variant text-on-surface-variant font-medium rounded-full hover:bg-surface-container-high active:scale-95 transition-all">
+                Kozel 0,3l · 38 Kč
+            </button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container border-2 border-outline-variant text-on-surface-variant font-medium rounded-full hover:bg-surface-container-high active:scale-95 transition-all">
+                Kofola 0,3l · 32 Kč
+            </button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container border-2 border-outline-variant text-on-surface-variant font-medium rounded-full hover:bg-surface-container-high active:scale-95 transition-all">
+                Becherovka · 65 Kč
+            </button>
+</section>
+<!-- User Cards (The Beer Mat) -->
+<div class="space-y-4 mt-2">
+<!-- Martin's Card -->
+<article class="bg-surface-container-low rounded-xl p-5 border-2 border-transparent hover:border-outline-variant/20 transition-all">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-lg border-2 border-amber-500/30">
+                            M
+                        </div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Martin</h3>
+<p class="text-zinc-500 text-sm font-medium">Pilsner Urquell</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-mono font-bold text-primary text-xl">156 Kč</span>
+</div>
+</div>
+<div class="flex items-center justify-between px-2">
+<button class="w-14 h-14 rounded-2xl border-2 border-outline flex items-center justify-center text-on-surface active:scale-90 transition-transform hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl">remove</span>
+</button>
+<span class="text-5xl font-mono font-black text-on-surface tracking-tighter">3</span>
+<button class="w-14 h-14 rounded-2xl bg-beer-gradient text-on-primary-container flex items-center justify-center brewery-shadow active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+</div>
+</article>
+<!-- Katka's Card -->
+<article class="bg-surface-container-low rounded-xl p-5 border-2 border-transparent hover:border-outline-variant/20 transition-all">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center font-bold text-lg border-2 border-rose-500/30">
+                            K
+                        </div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Katka</h3>
+<p class="text-zinc-500 text-sm font-medium">Kozel 0,3l</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-mono font-bold text-primary text-xl">38 Kč</span>
+</div>
+</div>
+<div class="flex items-center justify-between px-2">
+<button class="w-14 h-14 rounded-2xl border-2 border-outline flex items-center justify-center text-on-surface active:scale-90 transition-transform hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl">remove</span>
+</button>
+<span class="text-5xl font-mono font-black text-on-surface tracking-tighter">1</span>
+<button class="w-14 h-14 rounded-2xl bg-beer-gradient text-on-primary-container flex items-center justify-center brewery-shadow active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+</div>
+</article>
+<!-- Honza's Card -->
+<article class="bg-surface-container-low rounded-xl p-5 border-2 border-transparent hover:border-outline-variant/20 transition-all">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-sky-500/20 text-sky-500 flex items-center justify-center font-bold text-lg border-2 border-sky-500/30">
+                            H
+                        </div>
+<div>
+<h3 class="font-bold text-on-surface text-lg">Honza</h3>
+<p class="text-zinc-500 text-sm font-medium">Kofola 0,3l</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-mono font-bold text-primary text-xl">64 Kč</span>
+</div>
+</div>
+<div class="flex items-center justify-between px-2">
+<button class="w-14 h-14 rounded-2xl border-2 border-outline flex items-center justify-center text-on-surface active:scale-90 transition-transform hover:bg-surface-container-high">
+<span class="material-symbols-outlined text-2xl">remove</span>
+</button>
+<span class="text-5xl font-mono font-black text-on-surface tracking-tighter">2</span>
+<button class="w-14 h-14 rounded-2xl bg-beer-gradient text-on-primary-container flex items-center justify-center brewery-shadow active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+</div>
+</article>
+</div>
+</main>
+<!-- Sticky Summary Bar -->
+<aside class="fixed bottom-24 left-4 right-4 z-40 bg-zinc-900 border-2 border-zinc-800/40 rounded-xl p-4 shadow-2xl">
+<div class="flex items-center justify-between mb-4">
+<div>
+<p class="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">Aktuální útrata</p>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-mono font-black text-on-surface">258</span>
+<span class="text-primary font-bold">Kč</span>
+</div>
+</div>
+<div class="text-right">
+<span class="px-3 py-1 bg-surface-variant rounded-full text-zinc-400 font-mono text-[10px] uppercase tracking-widest border border-zinc-800/60">
+                    6 nápojů celkem
+                </span>
+</div>
+</div>
+<button class="w-full py-4 bg-beer-gradient text-on-primary-container font-black uppercase tracking-widest rounded-2xl shadow-xl active:translate-y-1 transition-all border-b-4 border-amber-800/40 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" data-weight="fill">receipt_long</span>
+            Uzavřít účet
+        </button>
+</aside>
+<!-- Bottom Navigation (Shared Component: BottomNavBar logic) -->
+<nav class="fixed bottom-0 left-0 w-full h-20 bg-zinc-900/80 backdrop-blur-xl border-t-2 border-zinc-800/20 px-6 flex justify-around items-center z-50">
+<button class="flex flex-col items-center justify-center bg-amber-500/10 text-amber-500 rounded-2xl p-2 px-6 active:translate-y-0.5 transition-all duration-200">
+<span class="material-symbols-outlined" data-weight="fill">add_circle</span>
+<span class="font-mono text-[10px] uppercase tracking-widest mt-1">Track</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 p-2 hover:text-amber-400 active:translate-y-0.5 transition-all duration-200">
+<span class="material-symbols-outlined">group</span>
+<span class="font-mono text-[10px] uppercase tracking-widest mt-1">Groups</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 p-2 hover:text-amber-400 active:translate-y-0.5 transition-all duration-200">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-mono text-[10px] uppercase tracking-widest mt-1">Receipts</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 p-2 hover:text-amber-400 active:translate-y-0.5 transition-all duration-200">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-mono text-[10px] uppercase tracking-widest mt-1">Settings</span>
+</button>
+</nav>
+</body></html>

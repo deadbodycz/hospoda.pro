@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&amp;family=Geist+Sans:wght@400;700&amp;family=Space+Grotesk:wght@300;700&amp;family=Work+Sans:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#e8a020",
+                        "on-tertiary": "#00344f",
+                        "on-error": "#690005",
+                        "primary-fixed": "#ffddb2",
+                        "on-surface-variant": "#d6c4ae",
+                        "on-tertiary-fixed": "#001e30",
+                        "inverse-primary": "#815500",
+                        "tertiary-fixed-dim": "#8dcdff",
+                        "surface-tint": "#ffb94c",
+                        "tertiary-container": "#4ab7fc",
+                        "tertiary-fixed": "#cae6ff",
+                        "inverse-surface": "#e4e2de",
+                        "secondary-fixed": "#e7e2d8",
+                        "surface-container-high": "#292a28",
+                        "surface-container-highest": "#343533",
+                        "primary-fixed-dim": "#ffb94c",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#004668",
+                        "surface": "#131412",
+                        "error": "#ffb4ab",
+                        "on-surface": "#e4e2de",
+                        "primary": "#ffbe5b",
+                        "on-error-container": "#ffdad6",
+                        "outline": "#9e8e7a",
+                        "on-secondary-fixed": "#1d1b16",
+                        "background": "#131412",
+                        "on-primary-fixed-variant": "#624000",
+                        "inverse-on-surface": "#30312e",
+                        "on-primary-container": "#5b3b00",
+                        "surface-dim": "#131412",
+                        "surface-container-lowest": "#0d0e0d",
+                        "surface-container-low": "#1b1c1a",
+                        "on-background": "#e4e2de",
+                        "on-primary": "#442b00",
+                        "secondary-container": "#494740",
+                        "secondary-fixed-dim": "#cbc6bd",
+                        "tertiary": "#94d0ff",
+                        "on-secondary-fixed-variant": "#494740",
+                        "on-secondary-container": "#b9b5ac",
+                        "on-primary-fixed": "#291800",
+                        "on-secondary": "#32302a",
+                        "secondary": "#cbc6bd",
+                        "surface-container": "#1f201e",
+                        "outline-variant": "#514534",
+                        "on-tertiary-fixed-variant": "#004b70",
+                        "surface-variant": "#343533",
+                        "surface-bright": "#393937"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Geist Sans", "sans-serif"],
+                        "body": ["Work Sans", "sans-serif"],
+                        "mono": ["Geist Mono", "monospace"],
+                        "label": ["Geist Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .beer-gradient {
+            background: linear-gradient(135deg, #ffbe5b 0%, #e8a020 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-12 z-50 bg-zinc-950/60 backdrop-blur-md border-b-2 border-zinc-800/20 flex justify-between items-center px-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500">local_bar</span>
+<h1 class="text-amber-500 font-bold tracking-tighter text-xl">hospoda.pro</h1>
+</div>
+<button class="hover:bg-zinc-800/50 transition-colors p-1 rounded-lg active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-zinc-400">dark_mode</span>
+</button>
+</header>
+<main class="pt-16 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Header Section -->
+<section class="space-y-2">
+<p class="font-label text-primary uppercase tracking-widest text-[10px]">Current Session</p>
+<h2 class="text-3xl font-bold font-headline tracking-tight text-on-surface">Table Setup</h2>
+<p class="text-on-surface-variant text-sm">Organize your round. Add friends to the tab and track their draughts.</p>
+</section>
+<!-- Horizontal Scrollable Avatars -->
+<section class="space-y-4">
+<h3 class="font-label text-xs uppercase tracking-wider text-outline">Suggested Peers</h3>
+<div class="flex overflow-x-auto hide-scrollbar gap-4 pb-2">
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-zinc-800 border-2 border-outline-variant flex items-center justify-center text-zinc-400 font-bold">JD</div>
+<span class="text-[10px] font-label text-outline">J. Doe</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center text-amber-500 font-bold">AK</div>
+<span class="text-[10px] font-label text-amber-500">A. King</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-500 font-bold">MT</div>
+<span class="text-[10px] font-label text-outline">M. Tea</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-sky-500/20 border-2 border-sky-500 flex items-center justify-center text-sky-500 font-bold">RL</div>
+<span class="text-[10px] font-label text-outline">R. Lee</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-rose-500/20 border-2 border-rose-500 flex items-center justify-center text-rose-500 font-bold">SP</div>
+<span class="text-[10px] font-label text-outline">S. Park</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-violet-500/20 border-2 border-violet-500 flex items-center justify-center text-violet-500 font-bold">BH</div>
+<span class="text-[10px] font-label text-outline">B. Hill</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-orange-500/20 border-2 border-orange-500 flex items-center justify-center text-orange-500 font-bold">CO</div>
+<span class="text-[10px] font-label text-outline">C. Oak</span>
+</div>
+<div class="flex-none flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full bg-teal-500/20 border-2 border-teal-500 flex items-center justify-center text-teal-500 font-bold">WF</div>
+<span class="text-[10px] font-label text-outline">W. Fox</span>
+</div>
+</div>
+</section>
+<!-- Primary Action -->
+<section>
+<button class="w-full beer-gradient text-on-primary-container font-bold py-4 rounded-2xl border-b-4 border-on-primary-container/30 active:translate-y-1 active:border-b-0 transition-all flex items-center justify-center gap-2 text-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+                + Add Person
+            </button>
+</section>
+<!-- Active Table Grid -->
+<section class="space-y-6">
+<div class="flex justify-between items-end">
+<h3 class="text-xl font-bold font-headline text-on-surface">At the Table</h3>
+<span class="font-mono text-primary text-sm">4 People Total</span>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<!-- User Card 1 -->
+<div class="bg-surface-container-low border-2 border-outline-variant/20 p-4 rounded-3xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-amber-500/10 border-2 border-amber-500/50 flex items-center justify-center text-amber-500 font-bold">AK</div>
+<div>
+<p class="font-bold text-on-surface">Alex King</p>
+<p class="text-xs font-mono text-outline uppercase tracking-wider">Captain</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-mono text-primary font-bold">3.5 L</p>
+<p class="text-[10px] text-outline uppercase">Consumed</p>
+</div>
+</div>
+<!-- User Card 2 -->
+<div class="bg-surface-container-highest border-2 border-outline-variant/20 p-4 rounded-3xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-rose-500/10 border-2 border-rose-500/50 flex items-center justify-center text-rose-500 font-bold">SP</div>
+<div>
+<p class="font-bold text-on-surface">Sarah Park</p>
+<p class="text-xs font-mono text-outline uppercase tracking-wider">Guest</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-mono text-on-surface-variant font-bold">1.2 L</p>
+<p class="text-[10px] text-outline uppercase">Consumed</p>
+</div>
+</div>
+<!-- User Card 3 -->
+<div class="bg-surface-container-low border-2 border-outline-variant/20 p-4 rounded-3xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-teal-500/10 border-2 border-teal-500/50 flex items-center justify-center text-teal-500 font-bold">WF</div>
+<div>
+<p class="font-bold text-on-surface">Will Fox</p>
+<p class="text-xs font-mono text-outline uppercase tracking-wider">Guest</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-mono text-on-surface-variant font-bold">0.5 L</p>
+<p class="text-[10px] text-outline uppercase">Consumed</p>
+</div>
+</div>
+<!-- User Card 4 -->
+<div class="bg-surface-container-highest border-2 border-outline-variant/20 p-4 rounded-3xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-violet-500/10 border-2 border-violet-500/50 flex items-center justify-center text-violet-500 font-bold">BH</div>
+<div>
+<p class="font-bold text-on-surface">Ben Hill</p>
+<p class="text-xs font-mono text-outline uppercase tracking-wider">Guest</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-mono text-on-surface-variant font-bold">2.0 L</p>
+<p class="text-[10px] text-outline uppercase">Consumed</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Placeholder for Modal State -->
+<div class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm">
+<div class="bg-surface-container border-2 border-outline-variant p-8 rounded-3xl w-full max-w-sm shadow-2xl">
+<h4 class="text-2xl font-bold font-headline mb-6">New Companion</h4>
+<div class="space-y-6">
+<div>
+<label class="font-label text-[10px] uppercase text-outline mb-2 block tracking-widest">Display Name</label>
+<input class="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl p-4 focus:border-primary focus:ring-0 text-on-surface" placeholder="e.g. Pint Master" type="text"/>
+</div>
+<div class="flex gap-4">
+<button class="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-2xl">Cancel</button>
+<button class="flex-1 beer-gradient text-on-primary-container font-bold py-3 rounded-2xl">Save</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 bg-zinc-950/60 backdrop-blur-md h-16 pb-safe border-t-2 border-zinc-800/20">
+<a class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+</a>
+<a class="flex items-center justify-center bg-amber-500/10 text-amber-500 rounded-2xl p-3 active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+</a>
+<a class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="format_list_bulleted">format_list_bulleted</span>
+</a>
+<a class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</a>
+</nav>
+</body></html>

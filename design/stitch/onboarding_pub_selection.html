@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>hospoda.pro - Pub Selection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&amp;family=Work+Sans:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#e8a020",
+                    "on-tertiary": "#00344f",
+                    "on-error": "#690005",
+                    "primary-fixed": "#ffddb2",
+                    "on-surface-variant": "#d6c4ae",
+                    "on-tertiary-fixed": "#001e30",
+                    "inverse-primary": "#815500",
+                    "tertiary-fixed-dim": "#8dcdff",
+                    "surface-tint": "#ffb94c",
+                    "tertiary-container": "#4ab7fc",
+                    "tertiary-fixed": "#cae6ff",
+                    "inverse-surface": "#e4e2de",
+                    "secondary-fixed": "#e7e2d8",
+                    "surface-container-high": "#292a28",
+                    "surface-container-highest": "#343533",
+                    "primary-fixed-dim": "#ffb94c",
+                    "error-container": "#93000a",
+                    "on-tertiary-container": "#004668",
+                    "surface": "#131412",
+                    "error": "#ffb4ab",
+                    "on-surface": "#e4e2de",
+                    "primary": "#ffbe5b",
+                    "on-error-container": "#ffdad6",
+                    "outline": "#9e8e7a",
+                    "on-secondary-fixed": "#1d1b16",
+                    "background": "#131412",
+                    "on-primary-fixed-variant": "#624000",
+                    "inverse-on-surface": "#30312e",
+                    "on-primary-container": "#5b3b00",
+                    "surface-dim": "#131412",
+                    "surface-container-lowest": "#0d0e0d",
+                    "surface-container-low": "#1b1c1a",
+                    "on-background": "#e4e2de",
+                    "on-primary": "#442b00",
+                    "secondary-container": "#494740",
+                    "secondary-fixed-dim": "#cbc6bd",
+                    "tertiary": "#94d0ff",
+                    "on-secondary-fixed-variant": "#494740",
+                    "on-secondary-container": "#b9b5ac",
+                    "on-primary-fixed": "#291800",
+                    "on-secondary": "#32302a",
+                    "secondary": "#cbc6bd",
+                    "surface-container": "#1f201e",
+                    "outline-variant": "#514534",
+                    "on-tertiary-fixed-variant": "#004b70",
+                    "surface-variant": "#343533",
+                    "surface-bright": "#393937"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk", "sans-serif"],
+                    "body": ["Work Sans", "sans-serif"],
+                    "label": ["Space Grotesk", "sans-serif"],
+                    "mono": ["Geist Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background-color: #131412;
+            color: #e4e2de;
+        }
+        .grain-texture {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+            pointer-events: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-12 z-50 bg-zinc-950/60 backdrop-blur-md border-b-2 border-zinc-800/20 flex justify-between items-center px-6 w-full max-w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500" style="font-variation-settings: 'FILL' 1;">local_bar</span>
+<h1 class="text-amber-500 font-bold tracking-tighter text-xl">hospoda.pro</h1>
+</div>
+<button class="text-zinc-400 hover:bg-zinc-800/50 transition-colors p-1 rounded-lg active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+</header>
+<main class="pt-20 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Search Section (The Modern Publican Input) -->
+<div class="relative group">
+<label class="block font-label text-xs uppercase tracking-widest text-outline mb-2 ml-1">Find your local</label>
+<div class="relative">
+<input autofocus="" class="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl py-5 px-6 pl-14 text-on-surface focus:border-primary focus:ring-0 transition-all placeholder:text-outline/50 font-body text-lg" placeholder="Search pubs, cities, or beers..." type="text"/>
+<span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary text-2xl">search</span>
+</div>
+</div>
+<!-- Recent Pubs Section -->
+<section class="space-y-6">
+<div class="flex items-center justify-between">
+<h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface">Recent Pubs</h2>
+<span class="font-label text-xs text-outline uppercase tracking-tighter">History</span>
+</div>
+<!-- Bento-ish Grid of Recent Pubs -->
+<div class="grid grid-cols-1 gap-4">
+<!-- Card 1 -->
+<div class="group bg-surface-container-low rounded-3xl p-6 border-2 border-transparent hover:border-outline-variant transition-all cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+<div class="flex justify-between items-start relative z-10">
+<div class="space-y-1">
+<h3 class="font-headline text-xl font-bold text-primary">The Golden Cask</h3>
+<p class="text-on-surface-variant text-sm font-medium">Vinohradská 102, Prague</p>
+</div>
+<div class="bg-surface-container-highest rounded-2xl px-3 py-1 flex items-center gap-1.5 border border-outline-variant/30">
+<span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-mono text-xs font-bold text-on-surface">24</span>
+</div>
+</div>
+<div class="mt-6 flex items-center justify-between text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span class="text-xs uppercase font-label tracking-widest">Visited 2 days ago</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-surface-container-highest rounded-3xl p-6 border-2 border-transparent hover:border-outline-variant transition-all cursor-pointer relative overflow-hidden">
+<div class="flex justify-between items-start relative z-10">
+<div class="space-y-1">
+<h3 class="font-headline text-xl font-bold text-primary">U Fleků Gastropub</h3>
+<p class="text-on-surface-variant text-sm font-medium">Křemencova 11, Prague</p>
+</div>
+<div class="bg-surface-container-low rounded-2xl px-3 py-1 flex items-center gap-1.5 border border-outline-variant/30">
+<span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-mono text-xs font-bold text-on-surface">12</span>
+</div>
+</div>
+<div class="mt-6 flex items-center justify-between text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span class="text-xs uppercase font-label tracking-widest">Visited Last Week</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Empty State (Conditional Rendering Placeholder) -->
+<section class="hidden flex flex-col items-center justify-center py-20 text-center space-y-6">
+<div class="relative w-48 h-48 flex items-center justify-center">
+<div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl"></div>
+<div class="relative w-32 h-32 bg-surface-container-highest border-4 border-outline-variant rounded-3xl transform rotate-12 flex items-center justify-center shadow-2xl">
+<div class="grain-texture absolute inset-0"></div>
+<span class="material-symbols-outlined text-6xl text-outline-variant">sports_bar</span>
+</div>
+<div class="absolute inset-0 w-32 h-32 bg-surface-container-low border-2 border-outline-variant/50 rounded-3xl -rotate-6 flex items-center justify-center -z-10"></div>
+</div>
+<div class="space-y-2">
+<h3 class="font-headline text-xl font-bold text-on-surface">No locals found</h3>
+<p class="text-on-surface-variant text-sm max-w-[240px] mx-auto">You haven't added any pubs yet. Start your draught journey by adding your first one.</p>
+</div>
+<button class="bg-primary text-on-primary-container px-8 py-3 rounded-2xl font-bold border-2 border-on-primary-container active:scale-95 transition-all shadow-lg">
+                Add My First Pub
+            </button>
+</section>
+<!-- Branding Visual (Asymmetric Decoration) -->
+<div class="pt-12 flex justify-center">
+<div class="w-24 h-1 bg-gradient-to-r from-transparent via-primary-container to-transparent opacity-20 rounded-full"></div>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 w-16 h-16 bg-primary text-on-primary-container rounded-2xl flex items-center justify-center shadow-[0_24px_24px_-12px_rgba(232,160,32,0.3)] border-2 border-on-primary-container hover:translate-y-[-4px] active:translate-y-0 transition-all z-40">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-16 z-50 bg-zinc-950/60 backdrop-blur-md border-t-2 border-zinc-800/20 flex justify-around items-center px-4">
+<a class="flex items-center justify-center bg-amber-500/10 text-amber-500 rounded-2xl p-3 active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+</a>
+<a class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+</a>
+<a class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">format_list_bulleted</span>
+</a>
+<a class="flex items-center justify-center text-zinc-500 p-3 hover:text-amber-400 transition-colors active:translate-y-0.5 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+</a>
+</nav>
+<!-- Grain Texture Overlay -->
+<div class="grain-texture fixed inset-0 z-0"></div>
+</body></html>
