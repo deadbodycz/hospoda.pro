@@ -19,13 +19,32 @@ export default function UsersPage({
 }: {
   params: { pubId: string }
 }) {
-  const { pub, users, loading, addUser, removeUser } = useSession()
+  const { pub, users, loading, addUser, removeUser, updateUser } = useSession()
   const { toast } = useToast()
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [newName, setNewName] = useState('')
   const [adding, setAdding] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
+
+  // Edit user
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [editUserName, setEditUserName] = useState('')
+  const [savingUser, setSavingUser] = useState(false)
+
+  function openEditUser(id: string, name: string) {
+    setEditUserName(name)
+    setEditingUserId(id)
+  }
+
+  async function handleSaveUser() {
+    if (!editingUserId || !editUserName.trim()) return
+    setSavingUser(true)
+    await updateUser(editingUserId, editUserName.trim())
+    setSavingUser(false)
+    setEditingUserId(null)
+    toast(`Jméno bylo změněno na ${editUserName.trim()}.`, 'success')
+  }
 
   const suggestedFiltered = SUGGESTED_NAMES.filter(
     (n) => !users.some((u) => u.name.toLowerCase() === n.toLowerCase())
@@ -89,7 +108,7 @@ export default function UsersPage({
           <p className="font-mono text-primary uppercase tracking-widest text-[10px]">
             Aktuální session
           </p>
-          <h2 className="text-3xl font-bold tracking-tight text-on-surface">
+          <h2 className="text-2xl font-bold tracking-tight text-on-surface">
             Stůl
           </h2>
           <p className="text-on-surface-variant text-sm">
@@ -130,7 +149,7 @@ export default function UsersPage({
         <section>
           <button
             onClick={() => setShowAddModal(true)}
-            className="w-full beer-gradient text-on-primary-container font-bold py-4 rounded-2xl border-b-4 border-on-primary-container/30 active:translate-y-1 active:border-b-0 transition-all flex items-center justify-center gap-2 text-lg"
+            className="w-full beer-gradient text-on-primary-container font-bold py-3 rounded-2xl border-b-4 border-on-primary-container/30 active:translate-y-1 active:border-b-0 transition-all flex items-center justify-center gap-2 text-sm"
           >
             <span className="material-symbols-outlined icon-filled">add_circle</span>
             Přidat osobu
@@ -172,16 +191,25 @@ export default function UsersPage({
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleRemove(user.id, user.name)}
-                      disabled={removing === user.id}
-                      aria-label={`Odebrat ${user.name}`}
-                      className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline disabled:opacity-30"
-                    >
-                      <span className="material-symbols-outlined text-xl">
-                        {removing === user.id ? 'hourglass_empty' : 'person_remove'}
-                      </span>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditUser(user.id, user.name)}
+                        aria-label={`Upravit ${user.name}`}
+                        className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
+                      >
+                        <span className="material-symbols-outlined text-lg">edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleRemove(user.id, user.name)}
+                        disabled={removing === user.id}
+                        aria-label={`Odebrat ${user.name}`}
+                        className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline disabled:opacity-30"
+                      >
+                        <span className="material-symbols-outlined text-lg">
+                          {removing === user.id ? 'hourglass_empty' : 'person_remove'}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 )
               })}
@@ -191,6 +219,44 @@ export default function UsersPage({
       </main>
 
       <BottomNav pubId={params.pubId} />
+
+      {/* Edit user modal */}
+      <Modal
+        open={editingUserId !== null}
+        onClose={() => setEditingUserId(null)}
+        title="Upravit jméno"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="font-mono text-[10px] uppercase text-outline mb-2 block tracking-widest">
+              Jméno
+            </label>
+            <input
+              autoFocus
+              value={editUserName}
+              onChange={(e) => setEditUserName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveUser()}
+              placeholder="např. Pinta Mistr"
+              className="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl p-3 focus:border-primary focus:outline-none text-on-surface text-sm"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setEditingUserId(null)}
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-2xl active:scale-95 transition-transform text-sm"
+            >
+              Zrušit
+            </button>
+            <button
+              onClick={handleSaveUser}
+              disabled={!editUserName.trim() || savingUser}
+              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-2.5 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
+            >
+              {savingUser ? 'Ukládám…' : 'Uložit'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Add person modal */}
       <Modal

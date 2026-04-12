@@ -11,7 +11,7 @@ interface DrinkChipsProps {
 function formatPrice(drink: Drink): string {
   const price = drink.price_large ?? drink.price_small
   if (price === null) return ''
-  return ` · ${Math.round(price)} Kč`
+  return `${Math.round(price)} Kč`
 }
 
 export function DrinkChips({ drinks, selected, onSelect }: DrinkChipsProps) {
@@ -19,41 +19,44 @@ export function DrinkChips({ drinks, selected, onSelect }: DrinkChipsProps) {
 
   return (
     <section
-      className="flex overflow-x-auto gap-2 pb-6 pt-2 sticky top-16 bg-background/95 backdrop-blur-sm z-40 -mx-4 px-4"
+      className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm -mx-4 px-4 pb-3 pt-2"
       aria-label="Výběr nápoje"
     >
-      {drinks.map((drink) => {
-        const active = selected === drink.id
-        return (
-          <button
-            key={drink.id}
-            onClick={() => onSelect(drink.id)}
-            className={`
-              flex-shrink-0 px-5 py-2.5 rounded-full border-2 font-bold transition-all active:scale-95
-              flex items-center gap-2 text-sm whitespace-nowrap
-              ${
-                active
-                  ? 'bg-beer-gradient text-on-primary-container border-primary-container shadow-lg brewery-shadow'
-                  : 'bg-surface-container border-outline-variant text-on-surface-variant hover:bg-surface-container-high'
-              }
-            `}
-            aria-pressed={active}
-          >
-            {active && (
-              <span
-                className="material-symbols-outlined text-lg icon-filled"
-                aria-hidden
-              >
-                sports_bar
+      <div className="bg-surface-container border-2 border-outline-variant/20 rounded-xl overflow-hidden max-h-[38vh] overflow-y-auto">
+        {drinks.map((drink, idx) => {
+          const active = selected === drink.id
+          const isLast = idx === drinks.length - 1
+          return (
+            <button
+              key={drink.id}
+              onClick={() => onSelect(drink.id)}
+              className={`
+                w-full flex items-center justify-between px-4 py-2.5 text-left transition-all active:scale-[0.99]
+                ${!isLast ? 'border-b border-outline-variant/15' : ''}
+                ${active
+                  ? 'bg-beer-gradient text-on-primary-container'
+                  : 'text-on-surface hover:bg-surface-container-high'
+                }
+              `}
+              aria-pressed={active}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {active && (
+                  <span className="material-symbols-outlined text-base icon-filled flex-shrink-0" aria-hidden>
+                    sports_bar
+                  </span>
+                )}
+                <span className={`text-sm font-medium truncate ${active ? '' : 'pl-6'}`}>
+                  {drink.name}
+                </span>
+              </div>
+              <span className={`text-sm font-mono flex-shrink-0 ml-3 ${active ? 'opacity-80' : 'text-outline'}`}>
+                {formatPrice(drink)}
               </span>
-            )}
-            {drink.name}
-            <span className={active ? 'opacity-80' : 'opacity-60'}>
-              {formatPrice(drink)}
-            </span>
-          </button>
-        )
-      })}
+            </button>
+          )
+        })}
+      </div>
     </section>
   )
 }

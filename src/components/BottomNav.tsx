@@ -29,13 +29,13 @@ export function BottomNav({ pubId }: BottomNavProps) {
         {
           icon: 'receipt_long',
           label: 'Účet',
-          href: null,
+          href: `/${pubId}/account`,
           exact: false,
         },
         {
           icon: 'settings',
           label: 'Nastavení',
-          href: null,
+          href: `/${pubId}/settings`,
           exact: false,
         },
       ]

@@ -29,7 +29,11 @@ type Action =
   | { type: 'INIT'; payload: Omit<State, 'loading' | 'error'> }
   | { type: 'ADD_USER'; payload: SessionUser }
   | { type: 'REMOVE_USER'; payload: string }
+  | { type: 'UPDATE_USER'; payload: { id: string; name: string } }
   | { type: 'ADD_DRINKS'; payload: Drink[] }
+  | { type: 'UPDATE_DRINK'; payload: Drink }
+  | { type: 'REMOVE_DRINK'; payload: string }
+  | { type: 'UPDATE_PUB'; payload: { name: string; address: string | null } }
   | { type: 'ADD_LOG'; payload: DrinkLog }
   | { type: 'REMOVE_LOG'; payload: string }
   | { type: 'CLOSE_SESSION'; payload: string }
@@ -46,8 +50,27 @@ function reducer(state: State, action: Action): State {
       return { ...state, users: [...state.users, action.payload] }
     case 'REMOVE_USER':
       return { ...state, users: state.users.filter((u) => u.id !== action.payload) }
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        users: state.users.map((u) =>
+          u.id === action.payload.id ? { ...u, name: action.payload.name } : u
+        ),
+      }
     case 'ADD_DRINKS':
       return { ...state, drinks: [...state.drinks, ...action.payload] }
+    case 'UPDATE_DRINK':
+      return {
+        ...state,
+        drinks: state.drinks.map((d) =>
+          d.id === action.payload.id ? action.payload : d
+        ),
+      }
+    case 'REMOVE_DRINK':
+      return { ...state, drinks: state.drinks.filter((d) => d.id !== action.payload) }
+    case 'UPDATE_PUB':
+      if (!state.pub) return state
+      return { ...state, pub: { ...state.pub, ...action.payload } }
     case 'ADD_LOG':
       return { ...state, logs: [...state.logs, action.payload] }
     case 'REMOVE_LOG':
@@ -72,12 +95,22 @@ const initialState: State = {
 
 // ── Context value ──────────────────────────────────────────────
 
+export interface DrinkBreakdownItem {
+  drink: Drink
+  count: number
+  subtotal: number
+}
+
 interface SessionContextValue extends State {
   addUser: (name: string) => Promise<void>
   removeUser: (id: string) => Promise<void>
+  updateUser: (id: string, name: string) => Promise<void>
   addDrinks: (
     items: { name: string; priceSmall: number | null; priceLarge: number | null }[]
   ) => Promise<void>
+  updateDrink: (id: string, name: string, priceSmall: number | null, priceLarge: number | null) => Promise<void>
+  removeDrink: (id: string) => Promise<void>
+  updatePub: (name: string, address: string | null) => Promise<void>
   incrementDrink: (userId: string, drink: Drink) => Promise<void>
   decrementDrink: (userId: string, drinkId: string) => Promise<void>
   closeSession: () => Promise<void>
@@ -85,6 +118,8 @@ interface SessionContextValue extends State {
   drinkCount: (userId: string, drinkId: string) => number
   /** Total spent by a specific user */
   userTotal: (userId: string) => number
+  /** Drink breakdown for a specific user */
+  userDrinkBreakdown: (userId: string) => DrinkBreakdownItem[]
   /** Grand total for the whole session */
   sessionTotal: number
   /** Total number of drinks in the session */
@@ -97,12 +132,17 @@ const SessionContext = createContext<SessionContextValue>({
   ...initialState,
   addUser: async () => {},
   removeUser: async () => {},
+  updateUser: async () => {},
   addDrinks: async () => {},
+  updateDrink: async () => {},
+  removeDrink: async () => {},
+  updatePub: async () => {},
   incrementDrink: async () => {},
   decrementDrink: async () => {},
   closeSession: async () => {},
   drinkCount: () => 0,
   userTotal: () => 0,
+  userDrinkBreakdown: () => [],
   sessionTotal: 0,
   sessionDrinkCount: 0,
   lastDrink: () => undefined,
@@ -230,6 +270,38 @@ export function SessionProvider({
     dispatch({ type: 'REMOVE_USER', payload: id })
   }, [])
 
+  const updateUser = useCallback(async (id: string, name: string) => {
+    await supabase.from('session_users').update({ name }).eq('id', id)
+    dispatch({ type: 'UPDATE_USER', payload: { id, name } })
+  }, [])
+
+  const updateDrink = useCallback(
+    async (id: string, name: string, priceSmall: number | null, priceLarge: number | null) => {
+      const { data, error } = await supabase
+        .from('drinks')
+        .update({ name, price_small: priceSmall, price_large: priceLarge })
+        .eq('id', id)
+        .select()
+        .single()
+      if (!error && data) dispatch({ type: 'UPDATE_DRINK', payload: data })
+    },
+    []
+  )
+
+  const removeDrink = useCallback(async (id: string) => {
+    await supabase.from('drinks').delete().eq('id', id)
+    dispatch({ type: 'REMOVE_DRINK', payload: id })
+  }, [])
+
+  const updatePub = useCallback(
+    async (name: string, address: string | null) => {
+      if (!state.pub) return
+      await supabase.from('pubs').update({ name, address }).eq('id', state.pub.id)
+      dispatch({ type: 'UPDATE_PUB', payload: { name, address } })
+    },
+    [state.pub]
+  )
+
   const addDrinks = useCallback(
     async (
       items: { name: string; priceSmall: number | null; priceLarge: number | null }[]
@@ -339,6 +411,30 @@ export function SessionProvider({
 
   const sessionDrinkCount = state.logs.reduce((sum, l) => sum + l.quantity, 0)
 
+  const userDrinkBreakdown = useCallback(
+    (userId: string): DrinkBreakdownItem[] => {
+      const userLogs = state.logs.filter((l) => l.session_user_id === userId)
+      const drinkMap = new Map<string, DrinkBreakdownItem>()
+      for (const log of userLogs) {
+        const drink = state.drinks.find((d) => d.id === log.drink_id)
+        if (!drink) continue
+        const existing = drinkMap.get(log.drink_id)
+        if (existing) {
+          existing.count += log.quantity
+          existing.subtotal += log.unit_price * log.quantity
+        } else {
+          drinkMap.set(log.drink_id, {
+            drink,
+            count: log.quantity,
+            subtotal: log.unit_price * log.quantity,
+          })
+        }
+      }
+      return Array.from(drinkMap.values())
+    },
+    [state.logs, state.drinks]
+  )
+
   const lastDrink = useCallback(
     (userId: string) => {
       const lastLog = [...state.logs]
@@ -358,12 +454,17 @@ export function SessionProvider({
         ...state,
         addUser,
         removeUser,
+        updateUser,
         addDrinks,
+        updateDrink,
+        removeDrink,
+        updatePub,
         incrementDrink,
         decrementDrink,
         closeSession,
         drinkCount,
         userTotal,
+        userDrinkBreakdown,
         sessionTotal,
         sessionDrinkCount,
         lastDrink,
