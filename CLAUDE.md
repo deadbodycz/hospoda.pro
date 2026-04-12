@@ -340,6 +340,44 @@ ANTHROPIC_API_KEY=...          # pouze server-side, nikdy NEXT_PUBLIC_
 
 ---
 
+## 🚀 GIT WORKFLOW
+
+**Po každé změně kódu vždy automaticky:**
+
+```bash
+git add -A
+git commit -m "stručný popis změny v češtině"
+git push
+```
+
+**Pravidla:**
+- **NIKDY nečekej na pokyn k pushnutí** — push provádej automaticky po dokončení každé úpravy
+- Commit message piš česky, stručně a výstižně (např. `fix: počasí z EXIF datetime`, `feat: export PDF záznamů`)
+- Po úspěšném push oznam uživateli, že změny jsou na GitHubu a Vercel deploy byl spuštěn
+
+---
+
+## 🗃️ DATABÁZOVÉ MIGRACE — WORKFLOW
+
+**VŽDY postupuj takto při změně DB:**
+
+```bash
+# 1. Vytvoř SQL soubor
+# supabase/migrations/004_popis.sql
+
+# 2. Spusť migraci
+npm run migrate supabase/migrations/004_popis.sql
+
+# 3. Commitni a pushni (automaticky, bez čekání na pokyn)
+git add supabase/migrations/004_popis.sql
+git commit -m "migration: popis změny"
+git push
+```
+
+**NIKDY neříkej uživateli "spusť v SQL Editoru"** — vždy spusť sám přes CLI.
+
+---
+
 ## Databázové migrace — jak je spouštět
 
 Migrace jsou v `supabase/migrations/`. Supabase CLI je dostupné přes `npx supabase`.
