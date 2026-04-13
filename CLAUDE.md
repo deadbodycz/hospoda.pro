@@ -34,6 +34,8 @@ Tento soubor řídí chování Claude Code v tomto projektu. Čti ho celý před
 
 ## Vizuální reference — Stitch design
 
+Složka `/public/navrh/` obsahuje fotky a obrázky od uživatele (design reference, screenshoty). Prohledej ji, pokud uživatel zmiňuje "návrh", "design" nebo "předlohu".
+
 Složka `/design/stitch/` obsahuje HTML exporty z Google Stitch. Jsou to **pixel-perfect předlohy** — neimportuj je, ale dodržuj z nich přesně třídy, tokeny, spacing a komponenty.
 
 ```
