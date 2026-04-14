@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Camera, ImagePlus, ScanLine, Loader2, X } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { ScanModal } from '@/components/ScanModal'
 import { BottomNav } from '@/components/BottomNav'
@@ -93,8 +94,8 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
       {/* Header */}
       <header className="fixed top-0 w-full h-12 z-50 bg-zinc-950/60 backdrop-blur-md border-b-2 border-zinc-800/20 flex justify-between items-center px-6">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-amber-500 icon-filled">local_bar</span>
-          <h1 className="text-amber-500 font-bold tracking-tighter text-xl">hospoda.pro</h1>
+          <ScanLine className="w-5 h-5 text-primary" />
+          <h1 className="text-primary font-bold tracking-tighter text-xl">hospoda.pro</h1>
         </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
@@ -103,7 +104,7 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
             className="w-10 h-10 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95"
             aria-label="Zpět"
           >
-            <span className="material-symbols-outlined text-zinc-400">close</span>
+            <X className="w-5 h-5 text-on-surface-variant" />
           </Link>
         </div>
       </header>
@@ -126,8 +127,8 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
             onClick={() => cameraInputRef.current?.click()}
             className="group relative overflow-hidden rounded-xl border-2 border-outline-variant bg-surface-container-low flex flex-col items-center justify-center p-8 transition-all hover:border-primary active:scale-95 min-h-[200px]"
           >
-            <div className="z-10 bg-primary-container/20 p-6 rounded-full mb-4">
-              <span className="material-symbols-outlined text-primary text-5xl">photo_camera</span>
+            <div className="z-10 bg-primary/10 p-6 rounded-full mb-4">
+              <Camera className="w-10 h-10 text-primary" />
             </div>
             <span className="z-10 font-bold text-xl text-on-surface">Vyfotit ceník</span>
           </button>
@@ -137,8 +138,8 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
             onClick={() => galleryInputRef.current?.click()}
             className="group relative overflow-hidden rounded-xl border-2 border-outline-variant bg-surface-container-low flex flex-col items-center justify-center p-8 transition-all hover:border-primary active:scale-95 min-h-[200px]"
           >
-            <div className="z-10 bg-secondary-container/20 p-6 rounded-full mb-4">
-              <span className="material-symbols-outlined text-secondary text-5xl">image</span>
+            <div className="z-10 bg-primary/10 p-6 rounded-full mb-4">
+              <ImagePlus className="w-10 h-10 text-primary" />
             </div>
             <span className="z-10 font-bold text-xl text-on-surface">Nahrát z galerie</span>
           </button>
@@ -147,7 +148,7 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
         {/* Error state */}
         {pageState === 'error' && (
           <div className="flex items-center gap-3 bg-error-container/20 border-2 border-error/30 rounded-xl p-4">
-            <span className="material-symbols-outlined text-error flex-shrink-0">error</span>
+            <ArrowLeft className="w-5 h-5 text-error flex-shrink-0 rotate-180" />
             <p className="text-on-surface-variant text-sm">{errorMessage}</p>
             <button
               onClick={() => setPageState('idle')}
@@ -197,26 +198,13 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
       {/* Processing overlay */}
       {pageState === 'processing' && (
         <div className="fixed inset-0 z-[60] bg-surface-container-lowest/90 backdrop-blur-xl flex flex-col items-center justify-center gap-6">
-          <div className="flex space-x-4">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="material-symbols-outlined text-primary text-4xl icon-filled"
-                style={{
-                  animation: `bounce 0.6s ${i * 0.2}s infinite alternate`,
-                }}
-              >
-                water_drop
-              </span>
-            ))}
-          </div>
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
           <p className="font-bold text-xl text-on-surface tracking-tight">
             Rozpoznávám nápoje…
           </p>
           <p className="font-mono text-xs text-outline uppercase tracking-tighter">
             AI analýza probíhá
           </p>
-          <style>{`@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}`}</style>
         </div>
       )}
 
