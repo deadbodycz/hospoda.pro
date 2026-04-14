@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
       items = await parseMenuText(ocrText)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      console.error('[scan][claude]', msg)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cause = (err as any)?.cause
+      console.error('[scan][claude]', msg, cause ? String(cause) : '', JSON.stringify(err))
       return NextResponse.json({ error: `Claude: ${msg}` }, { status: 500 })
     }
 
