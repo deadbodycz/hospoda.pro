@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, Pencil, Trash2, ScanLine, Save } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -102,9 +103,9 @@ export default function SettingsPage({
             className="w-9 h-9 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95"
             aria-label="Zpět"
           >
-            <span className="material-symbols-outlined text-on-surface text-xl">arrow_back</span>
+            <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
           </Link>
-          <span className="text-amber-500 font-bold tracking-tighter text-base">
+          <span className="text-primary font-bold tracking-tighter text-base">
             {pub?.name ?? 'Hospoda'}
           </span>
         </div>
@@ -138,7 +139,7 @@ export default function SettingsPage({
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline ml-3 flex-shrink-0"
               aria-label="Upravit hospodu"
             >
-              <span className="material-symbols-outlined text-xl">edit</span>
+              <Pencil className="w-4 h-4" />
             </button>
           </div>
         </section>
@@ -151,7 +152,7 @@ export default function SettingsPage({
               href={`/${params.pubId}/scan`}
               className="flex items-center gap-1.5 text-primary text-xs font-bold"
             >
-              <span className="material-symbols-outlined text-sm">photo_camera</span>
+              <ScanLine className="w-4 h-4" />
               Přeskenovat
             </Link>
           </div>
@@ -182,14 +183,14 @@ export default function SettingsPage({
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
                         aria-label={`Upravit ${drink.name}`}
                       >
-                        <span className="material-symbols-outlined text-lg">edit</span>
+                        <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeletingDrink(drink)}
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-error/10 transition-colors active:scale-90 text-outline hover:text-error"
                         aria-label={`Smazat ${drink.name}`}
                       >
-                        <span className="material-symbols-outlined text-lg">delete</span>
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -237,15 +238,16 @@ export default function SettingsPage({
           <div className="flex gap-3">
             <button
               onClick={() => setEditingPub(false)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-2xl active:scale-95 transition-transform text-sm"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
             >
               Zrušit
             </button>
             <button
               onClick={handleSavePub}
               disabled={!pubName.trim() || savingPub}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-2.5 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
+              className="flex-1 bg-primary text-on-primary font-bold py-2.5 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm flex items-center justify-center gap-1.5"
             >
+              <Save className="w-4 h-4" />
               {savingPub ? 'Ukládám…' : 'Uložit'}
             </button>
           </div>
@@ -302,15 +304,16 @@ export default function SettingsPage({
           <div className="flex gap-3">
             <button
               onClick={() => setEditingDrink(null)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-2xl active:scale-95 transition-transform text-sm"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
             >
               Zrušit
             </button>
             <button
               onClick={handleSaveDrink}
               disabled={!drinkName.trim() || savingDrink}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-2.5 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
+              className="flex-1 bg-primary text-on-primary font-bold py-2.5 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm flex items-center justify-center gap-1.5"
             >
+              <Save className="w-4 h-4" />
               {savingDrink ? 'Ukládám…' : 'Uložit'}
             </button>
           </div>
@@ -332,14 +335,14 @@ export default function SettingsPage({
           <div className="flex gap-3">
             <button
               onClick={() => setDeletingDrink(null)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-2xl active:scale-95 transition-transform text-sm"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
             >
               Zrušit
             </button>
             <button
               onClick={handleDeleteDrink}
               disabled={confirmingDelete}
-              className="flex-1 bg-error-container text-error font-bold py-2.5 rounded-2xl active:scale-95 transition-all disabled:opacity-40 text-sm"
+              className="flex-1 bg-error-container text-error font-bold py-2.5 rounded-xl active:scale-95 transition-all disabled:opacity-40 text-sm"
             >
               {confirmingDelete ? 'Mažu…' : 'Smazat'}
             </button>
