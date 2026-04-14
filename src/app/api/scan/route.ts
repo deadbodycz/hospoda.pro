@@ -5,13 +5,10 @@ import { parseMenuText } from '@/lib/anthropic'
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData()
-    const file = form.get('image') as File | null
-    if (!file) {
+    const base64 = form.get('base64') as string | null
+    if (!base64) {
       return NextResponse.json({ error: 'Chybí obrázek.' }, { status: 400 })
     }
-
-    const arrayBuffer = await file.arrayBuffer()
-    const base64 = Buffer.from(arrayBuffer).toString('base64')
 
     // Step 1: Google Vision OCR
     const ocrText = await extractTextFromImage(base64)
