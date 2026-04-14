@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
+import { Layers, Users, Receipt, Settings, MapPin } from 'lucide-react'
 
 interface BottomNavProps {
   pubId?: string
@@ -14,56 +15,16 @@ export function BottomNav({ pubId }: BottomNavProps) {
 
   const tabs = pubId
     ? [
-        {
-          icon: 'add_circle',
-          label: 'Track',
-          href: `/${pubId}`,
-          exact: true,
-        },
-        {
-          icon: 'group',
-          label: 'Lidé',
-          href: `/${pubId}/users`,
-          exact: false,
-        },
-        {
-          icon: 'receipt_long',
-          label: 'Účet',
-          href: `/${pubId}/account`,
-          exact: false,
-        },
-        {
-          icon: 'settings',
-          label: 'Nastavení',
-          href: `/${pubId}/settings`,
-          exact: false,
-        },
+        { icon: Layers,   label: 'Počítej',    href: `/${pubId}`,          exact: true  },
+        { icon: Users,    label: 'Lidé',        href: `/${pubId}/users`,    exact: false },
+        { icon: Receipt,  label: 'Účet',        href: `/${pubId}/account`,  exact: false },
+        { icon: Settings, label: 'Nastavení',   href: `/${pubId}/settings`, exact: false },
       ]
     : [
-        {
-          icon: 'local_bar',
-          label: 'Hospody',
-          href: '/',
-          exact: true,
-        },
-        {
-          icon: 'group',
-          label: 'Lidé',
-          href: null,
-          exact: false,
-        },
-        {
-          icon: 'receipt_long',
-          label: 'Účet',
-          href: null,
-          exact: false,
-        },
-        {
-          icon: 'settings',
-          label: 'Nastavení',
-          href: null,
-          exact: false,
-        },
+        { icon: MapPin,   label: 'Hospody',     href: '/',                  exact: true  },
+        { icon: Users,    label: 'Lidé',        href: null,                 exact: false },
+        { icon: Receipt,  label: 'Účet',        href: null,                 exact: false },
+        { icon: Settings, label: 'Nastavení',   href: null,                 exact: false },
       ]
 
   const isActive = (href: string | null, exact: boolean) => {
@@ -74,48 +35,57 @@ export function BottomNav({ pubId }: BottomNavProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 w-full h-20 bg-zinc-900/80 backdrop-blur-xl border-t-2 border-zinc-800/20 px-6 flex justify-around items-center z-50"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-0 w-full z-50 px-3"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
     >
-      {tabs.map((tab) => {
-        const active = isActive(tab.href, tab.exact)
+      <div className="bg-surface border border-outline-variant rounded-2xl px-4 py-2 flex justify-around items-center">
+        {tabs.map((tab) => {
+          const active = isActive(tab.href, tab.exact)
+          const Icon = tab.icon
 
-        if (!tab.href) {
+          if (!tab.href) {
+            return (
+              <button
+                key={tab.label}
+                onClick={() => toast('Přichází brzy', 'info')}
+                className="flex flex-col items-center gap-1 min-w-[48px] min-h-[48px] justify-center"
+              >
+                <div className="w-7 h-7 flex items-center justify-center rounded-lg">
+                  <Icon className="w-4 h-4 text-outline" />
+                </div>
+                <span className="font-mono text-[9px] uppercase tracking-widest text-outline">
+                  {tab.label}
+                </span>
+              </button>
+            )
+          }
+
           return (
-            <button
+            <Link
               key={tab.label}
-              onClick={() => toast('Přichází brzy', 'info')}
-              className="flex flex-col items-center justify-center text-zinc-500 p-2 hover:text-amber-400 active:translate-y-0.5 transition-all duration-200 min-w-[48px] min-h-[48px]"
+              href={tab.href}
+              className="flex flex-col items-center gap-1 min-w-[48px] min-h-[48px] justify-center active:scale-95 transition-transform"
             >
-              <span className="material-symbols-outlined">{tab.icon}</span>
-              <span className="font-mono text-[10px] uppercase tracking-widest mt-1">
+              <div
+                className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                  active ? 'bg-primary' : ''
+                }`}
+              >
+                <Icon
+                  className={`w-4 h-4 ${active ? 'text-on-primary' : 'text-outline'}`}
+                />
+              </div>
+              <span
+                className={`font-mono text-[9px] uppercase tracking-widest ${
+                  active ? 'text-primary' : 'text-outline'
+                }`}
+              >
                 {tab.label}
               </span>
-            </button>
+            </Link>
           )
-        }
-
-        return (
-          <Link
-            key={tab.label}
-            href={tab.href}
-            className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 active:translate-y-0.5 min-w-[48px] min-h-[48px] ${
-              active
-                ? 'bg-amber-500/10 text-amber-500 px-6'
-                : 'text-zinc-500 hover:text-amber-400'
-            }`}
-          >
-            <span
-              className={`material-symbols-outlined ${active ? 'icon-filled' : ''}`}
-            >
-              {tab.icon}
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-widest mt-1">
-              {tab.label}
-            </span>
-          </Link>
-        )
-      })}
+        })}
+      </div>
     </nav>
   )
 }
