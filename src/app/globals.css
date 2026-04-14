@@ -4,17 +4,13 @@
 
 /* ── Custom utilities ───────────────────────────────────────── */
 @layer utilities {
-  .beer-gradient {
-    background: linear-gradient(135deg, #ffbe5b 0%, #e8a020 100%);
-  }
-
-  .brewery-shadow {
-    box-shadow: 0 4px 24px rgba(232, 160, 32, 0.15);
+  .accent-shadow {
+    box-shadow: 0 4px 24px rgba(138, 153, 0, 0.18);
   }
 
   .grain-texture {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.05;
+    opacity: 0.04;
     pointer-events: none;
   }
 }
@@ -28,40 +24,25 @@ html.light {
   color-scheme: light;
 }
 
-/* Hide scrollbars globally (PWA-like feel) */
-::-webkit-scrollbar {
-  display: none;
-}
-* {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* Hide scrollbars globally */
+::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
 
 body {
-  background-color: #131412;
-  color: #e4e2de;
+  background-color: #0d0d0e;
+  color: #f0f0f0;
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 300ms, color 300ms;
 }
 
-/* Material Symbols weight / fill defaults */
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  user-select: none;
-}
-
-.material-symbols-outlined[data-fill='1'],
-.icon-filled {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
 /* ── Light mode overrides ───────────────────────────────────── */
 html.light body {
-  background-color: #f7f5f0;
-  color: #1a1916;
+  background-color: #f5f5f0;
+  color: #1a1a16;
 }
 
-html.light .bg-background  { background-color: #f7f5f0 !important; }
-html.light .text-on-surface { color: #1a1916 !important; }
-html.light .text-primary    { color: #c4780a !important; }
+html.light .bg-background   { background-color: #f5f5f0 !important; }
+html.light .bg-surface      { background-color: #ebebeb !important; }
+html.light .text-on-surface { color: #1a1a16 !important; }
+html.light .text-primary    { color: #6b7700 !important; }
