@@ -33,7 +33,15 @@ export async function parseMenuText(ocrText: string): Promise<ScannedItem[]> {
     ],
   })
 
-  const text = message.content[0].type === 'text' ? message.content[0].text : ''
-  const parsed = JSON.parse(text) as { items: ScannedItem[] }
-  return parsed.items
+  const block = message.content[0]
+  if (!block || block.type !== 'text') {
+    throw new Error('Claude vrátil neočekávaný typ odpovědi')
+  }
+
+  try {
+    const parsed = JSON.parse(block.text) as { items: ScannedItem[] }
+    return parsed.items ?? []
+  } catch {
+    throw new Error('Nepodařilo se zpracovat odpověď Claude — neplatný JSON')
+  }
 }
