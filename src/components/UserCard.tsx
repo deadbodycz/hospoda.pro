@@ -1,6 +1,7 @@
 'use client'
 
-import { getAvatarClasses, getInitials } from '@/lib/colors'
+import { Minus, Plus } from 'lucide-react'
+import { getAvatarStyle, getInitials } from '@/lib/colors'
 import { haptic } from '@/lib/haptics'
 import type { Drink, SessionUser } from '@/types'
 import type { DrinkBreakdownItem } from '@/contexts/SessionContext'
@@ -24,7 +25,7 @@ export function UserCard({
   onIncrement,
   onDecrement,
 }: UserCardProps) {
-  const avatar = getAvatarClasses(user.avatar_color)
+  const av = getAvatarStyle(user.name)
   const initials = getInitials(user.name)
 
   function handleIncrement() {
@@ -39,73 +40,58 @@ export function UserCard({
   }
 
   return (
-    <article className="bg-surface-container-low rounded-xl p-4 border-2 border-transparent hover:border-outline-variant/20 transition-all">
-      {/* Header row */}
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center gap-2.5">
-          {/* Avatar */}
-          <div
-            className={`
-              w-10 h-10 rounded-full flex items-center justify-center
-              font-bold text-sm border-2 flex-shrink-0
-              ${avatar.bg} ${avatar.text} ${avatar.border}
-            `}
-            aria-hidden
-          >
-            {initials}
-          </div>
-          {/* Name */}
-          <h3 className="font-bold text-on-surface text-base leading-tight">
-            {user.name}
-          </h3>
+    <article className="bg-surface border border-outline-variant rounded-2xl p-4">
+      {/* Top row: avatar + name + counter */}
+      <div className="flex items-center gap-3">
+        <div
+          className="w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs flex-shrink-0"
+          style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}
+          aria-hidden
+        >
+          {initials}
         </div>
 
-        {/* Total cost */}
-        <span className="font-mono font-bold text-primary text-base tabular-nums">
-          {Math.round(total)} Kč
-        </span>
-      </div>
-
-      {/* Counter row */}
-      <div className="flex items-center justify-between px-1">
-        {/* Minus button */}
-        <button
-          onClick={handleDecrement}
-          disabled={count === 0}
-          aria-label={`Ubrat nápoj pro ${user.name}`}
-          className="w-11 h-11 rounded-2xl border-2 border-outline flex items-center justify-center text-on-surface
-            active:scale-90 transition-transform hover:bg-surface-container-high
-            disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-xl">remove</span>
-        </button>
-
-        {/* Count */}
-        <span className="text-4xl font-mono font-black text-on-surface tracking-tighter tabular-nums select-none">
-          {count}
+        <span className="font-semibold text-on-surface text-sm flex-1 truncate">
+          {user.name}
         </span>
 
-        {/* Plus button */}
-        <button
-          onClick={handleIncrement}
-          disabled={!selectedDrink}
-          aria-label={`Přidat nápoj pro ${user.name}`}
-          className="w-11 h-11 rounded-2xl bg-beer-gradient text-on-primary-container flex items-center justify-center
-            brewery-shadow active:translate-y-0.5 transition-all
-            disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-xl font-bold">add</span>
-        </button>
+        {/* Counter */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleDecrement}
+            disabled={count === 0}
+            aria-label={`Ubrat nápoj pro ${user.name}`}
+            className="w-7 h-7 rounded-lg border border-outline-variant flex items-center justify-center
+              active:scale-90 transition-transform hover:bg-surface-container
+              disabled:opacity-30 disabled:cursor-not-allowed p-1"
+          >
+            <Minus className="w-3.5 h-3.5 text-on-surface-variant" />
+          </button>
+
+          <span className="text-base font-mono font-bold text-on-surface tabular-nums min-w-[20px] text-center">
+            {count}
+          </span>
+
+          <button
+            onClick={handleIncrement}
+            disabled={!selectedDrink}
+            aria-label={`Přidat nápoj pro ${user.name}`}
+            className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center
+              active:scale-90 transition-transform accent-shadow
+              disabled:opacity-40 disabled:cursor-not-allowed p-1"
+          >
+            <Plus className="w-3.5 h-3.5 text-on-primary" />
+          </button>
+        </div>
       </div>
 
       {/* Drink breakdown */}
       {drinkBreakdown.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-outline-variant/20 space-y-1">
+        <div className="mt-3 pt-3 border-t border-outline-variant space-y-1.5">
           {drinkBreakdown.map(({ drink, count: cnt, subtotal }) => (
             <div key={drink.id} className="flex justify-between items-center">
               <span className="text-xs text-on-surface-variant truncate max-w-[60%]">
-                {drink.name}
-                <span className="text-outline ml-1">×{cnt}</span>
+                {cnt}× {drink.name}
               </span>
               <span className="text-xs font-mono text-outline tabular-nums">
                 {Math.round(subtotal)} Kč
