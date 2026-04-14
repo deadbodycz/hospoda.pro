@@ -22,10 +22,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ items })
   } catch (err) {
-    console.error('[scan]', err)
-    return NextResponse.json(
-      { error: 'Nepodařilo se rozpoznat text z obrázku. Zkus to znovu.' },
-      { status: 500 }
-    )
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[scan]', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
