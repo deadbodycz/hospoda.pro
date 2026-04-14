@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, UserPlus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { getAvatarClasses, getInitials } from '@/lib/colors'
+import { getAvatarStyle, getInitials } from '@/lib/colors'
 
 const SUGGESTED_NAMES = [
   'Honza', 'Petra', 'Martin', 'Katka', 'Tomáš',
@@ -93,9 +94,9 @@ export default function UsersPage({
             className="w-9 h-9 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95"
             aria-label="Zpět"
           >
-            <span className="material-symbols-outlined text-on-surface text-xl">arrow_back</span>
+            <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
           </Link>
-          <span className="text-amber-500 font-bold tracking-tighter text-xl">
+          <span className="text-primary font-bold tracking-tighter text-xl">
             {pub?.name ?? 'Hospoda'}
           </span>
         </div>
@@ -124,7 +125,7 @@ export default function UsersPage({
             </h3>
             <div className="flex overflow-x-auto gap-4 pb-2">
               {suggestedFiltered.slice(0, 8).map((name) => {
-                const avatar = getAvatarClasses(name)
+                const av = getAvatarStyle(name)
                 return (
                   <button
                     key={name}
@@ -133,11 +134,12 @@ export default function UsersPage({
                     aria-label={`Přidat ${name}`}
                   >
                     <div
-                      className={`w-14 h-14 rounded-full border-2 flex items-center justify-center font-bold text-sm ${avatar.bg} ${avatar.text} ${avatar.border}`}
+                      className="w-14 h-14 rounded-full border-2 flex items-center justify-center font-bold text-sm"
+                      style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}
                     >
                       {getInitials(name)}
                     </div>
-                    <span className={`text-[10px] font-mono ${avatar.text}`}>{name}</span>
+                    <span className="text-[10px] font-mono" style={{ color: av.color }}>{name}</span>
                   </button>
                 )
               })}
@@ -149,9 +151,9 @@ export default function UsersPage({
         <section>
           <button
             onClick={() => setShowAddModal(true)}
-            className="w-full beer-gradient text-on-primary-container font-bold py-3 rounded-2xl border-b-4 border-on-primary-container/30 active:translate-y-1 active:border-b-0 transition-all flex items-center justify-center gap-2 text-sm"
+            className="w-full bg-primary text-on-primary font-bold py-3 rounded-xl active:translate-y-0.5 transition-all flex items-center justify-center gap-2 text-sm"
           >
-            <span className="material-symbols-outlined icon-filled">add_circle</span>
+            <UserPlus className="w-4 h-4" />
             Přidat osobu
           </button>
         </section>
@@ -172,7 +174,7 @@ export default function UsersPage({
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {users.map((user) => {
-                const avatar = getAvatarClasses(user.avatar_color)
+                const av = getAvatarStyle(user.name)
                 return (
                   <div
                     key={user.id}
@@ -180,7 +182,8 @@ export default function UsersPage({
                   >
                     <div className="flex items-center gap-4">
                       <div
-                        className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-bold text-sm ${avatar.bg} ${avatar.text} ${avatar.border}`}
+                        className="w-10 h-10 rounded-lg border flex items-center justify-center font-bold text-sm flex-shrink-0"
+                        style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}
                       >
                         {getInitials(user.name)}
                       </div>
@@ -197,7 +200,7 @@ export default function UsersPage({
                         aria-label={`Upravit ${user.name}`}
                         className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
                       >
-                        <span className="material-symbols-outlined text-lg">edit</span>
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleRemove(user.id, user.name)}
@@ -205,9 +208,7 @@ export default function UsersPage({
                         aria-label={`Odebrat ${user.name}`}
                         className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline disabled:opacity-30"
                       >
-                        <span className="material-symbols-outlined text-lg">
-                          {removing === user.id ? 'hourglass_empty' : 'person_remove'}
-                        </span>
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -243,15 +244,17 @@ export default function UsersPage({
           <div className="flex gap-3">
             <button
               onClick={() => setEditingUserId(null)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-2xl active:scale-95 transition-transform text-sm"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm flex items-center justify-center gap-1.5"
             >
+              <X className="w-3.5 h-3.5" />
               Zrušit
             </button>
             <button
               onClick={handleSaveUser}
               disabled={!editUserName.trim() || savingUser}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-2.5 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
+              className="flex-1 bg-primary text-on-primary font-bold py-2.5 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm flex items-center justify-center gap-1.5"
             >
+              <Check className="w-4 h-4" />
               {savingUser ? 'Ukládám…' : 'Uložit'}
             </button>
           </div>
@@ -281,14 +284,14 @@ export default function UsersPage({
           <div className="flex gap-3">
             <button
               onClick={() => setShowAddModal(false)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-2xl active:scale-95 transition-transform"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-xl active:scale-95 transition-transform"
             >
               Zrušit
             </button>
             <button
               onClick={() => handleAddUser(newName)}
               disabled={!newName.trim() || adding}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-3 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40"
+              className="flex-1 bg-primary text-on-primary font-bold py-3 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40"
             >
               {adding ? 'Přidávám…' : 'Uložit'}
             </button>
