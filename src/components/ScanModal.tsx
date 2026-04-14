@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { X, PlusCircle } from 'lucide-react'
 import type { ScannedItem } from '@/types'
 
 interface ScanModalProps {
@@ -49,7 +50,7 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-90 ml-4 flex-shrink-0"
             aria-label="Zavřít"
           >
-            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            <X className="w-5 h-5 text-on-surface-variant" />
           </button>
         </div>
 
@@ -163,11 +164,11 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
           <button
             onClick={handleConfirm}
             disabled={checked.size === 0}
-            className="w-full bg-primary py-4 rounded-2xl border-2 border-on-primary-container text-on-primary-container font-bold text-lg
-              flex items-center justify-center gap-2 active:translate-y-1 transition-all shadow-xl
+            className="w-full bg-primary py-4 rounded-xl text-on-primary font-bold text-base
+              flex items-center justify-center gap-2 active:translate-y-0.5 transition-all accent-shadow
               disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <span className="material-symbols-outlined">add_circle</span>
+            <PlusCircle className="w-5 h-5" />
             Přidat vybrané ({checked.size})
           </button>
         </div>
