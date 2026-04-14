@@ -67,7 +67,10 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
       formData.append('mediaType', mediaType)
 
       const res = await fetch('/api/scan', { method: 'POST', body: formData })
-      if (!res.ok) throw new Error(await res.text())
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
 
       const { items } = (await res.json()) as { items: ScannedItem[] }
       if (items.length === 0) {
@@ -77,8 +80,8 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
       }
       setScannedItems(items)
       setPageState('results')
-    } catch {
-      setErrorMessage('Nepodařilo se načíst ceník. Zkus to znovu.')
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Nepodařilo se načíst ceník. Zkus to znovu.')
       setPageState('error')
     }
   }
