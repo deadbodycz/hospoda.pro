@@ -16,10 +16,7 @@ interface VisionResponse {
   }>
 }
 
-export async function extractTextFromImage(
-  base64Image: string,
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg'
-): Promise<string> {
+export async function extractTextFromImage(base64Image: string): Promise<string> {
   const apiKey = process.env.GOOGLE_VISION_API_KEY
   if (!apiKey) throw new Error('GOOGLE_VISION_API_KEY není nastavený')
 
@@ -33,17 +30,32 @@ export async function extractTextFromImage(
     ],
   }
 
-  const res = await fetch(`${VISION_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  let res: Response
+  try {
+    res = await fetch(VISION_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    throw new Error(
+      `Nepodařilo se připojit k Google Vision API: ${err instanceof Error ? err.message : 'neznámá chyba'}`
+    )
+  }
 
   if (!res.ok) {
     throw new Error(`Google Vision API error: ${res.status} ${res.statusText}`)
   }
 
   const data: VisionResponse = await res.json()
+
+  if (!Array.isArray(data.responses) || data.responses.length === 0) {
+    throw new Error('Google Vision API vrátila prázdnou odpověď')
+  }
+
   const response = data.responses[0]
 
   if (response.error) {
