@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { scanMenuImage } from '@/lib/anthropic'
+import { parseMenuText } from '@/lib/anthropic'
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData()
-    const base64 = formData.get('base64') as string | null
-    const mediaType = (formData.get('mediaType') as string | null) ?? 'image/jpeg'
+    const { text } = await req.json()
 
-    if (!base64) {
-      return NextResponse.json({ error: 'Chybí obrázek.' }, { status: 400 })
+    if (!text || typeof text !== 'string') {
+      return NextResponse.json({ error: 'Chybí OCR text.' }, { status: 400 })
     }
 
-    const validMediaTypes = ['image/jpeg', 'image/png', 'image/webp'] as const
-    type ValidMediaType = (typeof validMediaTypes)[number]
-    const resolvedMediaType: ValidMediaType = (validMediaTypes as readonly string[]).includes(mediaType)
-      ? (mediaType as ValidMediaType)
-      : 'image/jpeg'
-
-    const items = await scanMenuImage(base64, resolvedMediaType)
+    const items = await parseMenuText(text)
     return NextResponse.json({ items })
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
