@@ -42,7 +42,9 @@ export async function parseMenuText(ocrText: string): Promise<ScannedItem[]> {
   }
 
   try {
-    const parsed = JSON.parse(block.text) as { items: ScannedItem[] }
+    // Strip markdown code fences if present
+    const text = block.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+    const parsed = JSON.parse(text) as { items: ScannedItem[] }
     return parsed.items ?? []
   } catch {
     throw new Error('Nepodařilo se zpracovat odpověď Claude — neplatný JSON')
