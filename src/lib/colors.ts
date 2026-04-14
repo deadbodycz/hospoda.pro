@@ -1,53 +1,34 @@
 /**
  * Deterministické přiřazení barvy avataru z jména uživatele.
- * Vrací Tailwind color name — třídy jsou whitelistovány v tailwind.config.js.
+ * Vrací CSS hodnoty pro inline style — zemité tóny laditné k olivové.
  */
 
-const COLORS = [
-  'amber',
-  'rose',
-  'sky',
-  'emerald',
-  'violet',
-  'orange',
-  'teal',
-  'indigo',
-  'cyan',
-  'fuchsia',
-] as const
+export interface AvatarStyle {
+  bg: string      // pro style.backgroundColor
+  color: string   // pro style.color
+  border: string  // pro style.borderColor
+}
 
-type AvatarColor = (typeof COLORS)[number]
+const AVATAR_PALETTE: AvatarStyle[] = [
+  { bg: 'rgba(138,120,80,0.15)',  color: '#C4A868', border: 'rgba(138,120,80,0.3)'  }, // ochre
+  { bg: 'rgba(90,130,120,0.15)', color: '#6AADA0', border: 'rgba(90,130,120,0.3)'  }, // muted teal
+  { bg: 'rgba(140,100,90,0.15)', color: '#C07A6A', border: 'rgba(140,100,90,0.3)'  }, // terracotta
+  { bg: 'rgba(110,95,150,0.15)', color: '#9A82C8', border: 'rgba(110,95,150,0.3)'  }, // dusty violet
+  { bg: 'rgba(80,120,160,0.15)', color: '#6A9AB8', border: 'rgba(80,120,160,0.3)'  }, // slate blue
+  { bg: 'rgba(150,110,70,0.15)', color: '#C89060', border: 'rgba(150,110,70,0.3)'  }, // warm sienna
+]
 
 function hashString(s: string): number {
   let hash = 0
   for (let i = 0; i < s.length; i++) {
     hash = (hash << 5) - hash + s.charCodeAt(i)
-    hash |= 0 // convert to 32-bit int
+    hash |= 0
   }
   return Math.abs(hash)
 }
 
-export function getAvatarColor(name: string): AvatarColor {
-  return COLORS[hashString(name) % COLORS.length]
-}
-
-export interface AvatarClasses {
-  bg: string
-  text: string
-  border: string
-}
-
-export function getAvatarClasses(colorOrName: string): AvatarClasses {
-  // If colorOrName is already a known color token, use it directly
-  const color = (COLORS as readonly string[]).includes(colorOrName)
-    ? (colorOrName as AvatarColor)
-    : getAvatarColor(colorOrName)
-
-  return {
-    bg:     `bg-${color}-500/20`,
-    text:   `text-${color}-500`,
-    border: `border-${color}-500/30`,
-  }
+export function getAvatarStyle(name: string): AvatarStyle {
+  return AVATAR_PALETTE[hashString(name) % AVATAR_PALETTE.length]
 }
 
 /** Initials from a display name (max 2 chars) */
