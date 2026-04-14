@@ -12,7 +12,7 @@ Tento soubor řídí chování Claude Code v tomto projektu. Čti ho celý před
 - **Repo:** https://github.com/deadbodycz/hospoda.pro.git
 - **Hosting:** Vercel (automatický deploy z `main` branche)
 - **DB:** Supabase (PostgreSQL)
-- **AI:** Anthropic API — claude-sonnet-4-6 (vision pro skenování ceníku)
+- **AI:** Google Cloud Vision API (OCR) + Anthropic API claude-sonnet-4-6 (parsing textu)
 
 ---
 
@@ -22,10 +22,11 @@ Tento soubor řídí chování Claude Code v tomto projektu. Čti ho celý před
 |--------|-------------|
 | Framework | Next.js 14 (App Router) |
 | Styling | Tailwind CSS v3 |
-| Ikony | Material Symbols Outlined (Google Fonts) |
-| Fonty | Geist Sans, Geist Mono, Work Sans (Google Fonts) |
+| Ikony | lucide-react |
+| Fonty | Geist Sans, Geist Mono (Google Fonts) |
 | DB client | @supabase/supabase-js |
-| AI | Anthropic SDK (@anthropic-ai/sdk) |
+| AI — OCR | Google Cloud Vision REST API (DOCUMENT_TEXT_DETECTION) |
+| AI — parsing | Anthropic SDK (@anthropic-ai/sdk), model claude-sonnet-4-6 |
 | State | React useState / useContext + useReducer v SessionContext (žádný Zustand) |
 | Auth | Supabase Auth (anonymní session nebo email magic link) |
 | Image opt. | sharp (devDependency, Next.js image optimization) |
@@ -47,67 +48,7 @@ design/
     └── draught_counter.html            ← HLAVNÍ OBRAZOVKA: chip scroll, user cards, +/- counter, summary bar
 ```
 
-### Co Stitch skutečně vygeneroval (přesné třídy — kopíruj 1:1):
-
-**Fonty ve skutečném výstupu:**
-- Onboarding: `Space Grotesk` (headline/label) + `Work Sans` (body) + `Geist Mono` (mono)
-- Scan & Users: `Space Grotesk` / `Geist Sans` + `Work Sans` + `Geist Mono`
-- Draught Counter: **`Geist`** (sans + headline + body) + `Geist Mono` (mono/label) ← tento soubor je nejnovější, drž se jeho fontů
-
-**Skutečné CSS utility z Stitch:**
-```css
-.beer-gradient { background: linear-gradient(180deg, #ffbe5b 0%, #e8a020 100%); }
-.brewery-shadow { box-shadow: 0 4px 24px rgba(232, 160, 32, 0.15); }
-.grain-texture { /* SVG noise, opacity: 0.05, pointer-events: none */ }
-::-webkit-scrollbar { display: none; }
-body { -ms-overflow-style: none; scrollbar-width: none; }
-```
-
-**Bottom nav — skutečná implementace z Stitch (draught_counter.html):**
-- Výška: `h-20` (80px), ne 64px
-- Pozadí: `bg-zinc-900/80 backdrop-blur-xl`
-- Border: `border-t-2 border-zinc-800/20`
-- Aktivní tab: amber background pill + label pod ikonou
-- Labely: `font-mono text-[10px] uppercase tracking-widest`
-
-**Header — skutečná implementace:**
-- Výška: `h-16` na draught_counter, `h-12` na ostatních
-- Pozadí: `bg-zinc-900/60` nebo `bg-zinc-950/60 backdrop-blur-md`
-- Border: `border-b-2 border-zinc-800/20`
-- Dark mode toggle: ikona `dark_mode` (Material Symbols)
-
-**User karty — skutečné třídy:**
-```html
-<article class="bg-surface-container-low rounded-xl p-5 border-2 border-transparent hover:border-outline-variant/20">
-```
-Pozor: Stitch použil `rounded-xl` (ne `rounded-3xl`) na kartách v draught_counter!
-
-**Avatar circle — skutečná implementace:**
-```html
-<div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-500 border-2 border-amber-500/30">M</div>
-```
-
-**+/- tlačítka — skutečné třídy:**
-```html
-<!-- Minus -->
-<button class="w-14 h-14 rounded-2xl border-2 border-outline flex items-center justify-center active:scale-90 transition-transform">
-<!-- Plus -->  
-<button class="w-14 h-14 rounded-2xl bg-beer-gradient text-on-primary-container brewery-shadow active:translate-y-0.5">
-```
-
-**Chip scroll — skutečné třídy:**
-```html
-<section class="flex overflow-x-auto gap-2 pb-6 pt-2 sticky top-16 bg-background/95 backdrop-blur-sm z-40 -mx-4 px-4">
-<!-- Aktivní chip -->
-<button class="flex-shrink-0 px-5 py-2.5 bg-beer-gradient rounded-full border-2 border-primary-container shadow-lg">
-<!-- Neaktivní chip -->
-<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container border-2 border-outline-variant text-on-surface-variant rounded-full">
-```
-
-**Summary bar — skutečné třídy:**
-```html
-<aside class="fixed bottom-24 left-4 right-4 z-40 bg-zinc-900 border-2 border-zinc-800/40 rounded-xl p-4 shadow-2xl">
-```
+⚠️ **Stitch předlohy jsou historické** — design byl kompletně přepsán na olivovou paletu (viz sekce Design systém níže). Stitch HTML soubory slouží jen jako referenční layout, ne jako zdroj barev nebo ikon.
 
 ---
 
@@ -142,8 +83,9 @@ src/
 │   └── ThemeContext.tsx         ← Dark/light theme (localStorage sync)
 ├── lib/
 │   ├── supabase.ts              ← Supabase client (singleton)
-│   ├── anthropic.ts             ← Anthropic helper (komprimace + API call)
-│   ├── colors.ts                ← Deterministická generace barvy avataru z jména
+│   ├── googleVision.ts          ← Google Cloud Vision REST API wrapper (OCR)
+│   ├── anthropic.ts             ← parseMenuText(ocrText) — Claude parsuje text z OCR
+│   ├── colors.ts                ← getAvatarStyle(name) → { bg, color, border } CSS hodnoty
 │   └── haptics.ts               ← navigator.vibrate wrapper
 └── types/
     └── index.ts                 ← Pub, Drink, Session, SessionUser, DrinkLog, ScannedItem
@@ -154,48 +96,51 @@ src/
 - **SessionContext** (`contexts/SessionContext.tsx`) — centrální state celé pub session. Používá `useReducer` s explicitními akcemi. Obsahuje optimistické aktualizace pro `incrementDrink` (temp ID → nahrazení reálným po DB response). Exponuje: `addUser`, `removeUser`, `updateUser`, `addDrinks`, `updateDrink`, `removeDrink`, `updatePub`, `incrementDrink`, `decrementDrink`, `closeSession`, `drinkCount`, `userTotal`, `userDrinkBreakdown`, `sessionTotal`, `sessionDrinkCount`, `lastDrink`. Exportuje typ `DrinkBreakdownItem { drink, count, subtotal }`.
 - **`[pubId]/layout.tsx`** — Server Component wrapper, který obaluje celou pub sekci do `<SessionProvider pubId={params.pubId}>`.
 - **Soubory komponent** jsou PascalCase (např. `UserCard.tsx`, `BottomNav.tsx`), ne kebab-case.
+- **`lib/colors.ts`** — exportuje `getAvatarStyle(name: string): AvatarStyle` a `getInitials(name)`. `AvatarStyle = { bg, color, border }` jsou CSS rgba/hex hodnoty pro inline `style={}`. **Nepoužívej Tailwind třídy pro avatary** — použij `style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}`.
+- **`session_users.avatar_color`** — sloupec sice existuje, ale ukládá se do něj **jméno uživatele** (ne Tailwind barva). Barva avataru se derivuje deterministicky z jména za běhu přes `getAvatarStyle(user.name)`.
+- **`/api/scan` route** — čte `base64` (string) z FormData, **ne** `image` (File). Má `export const maxDuration = 60`. Tok: base64 → Google Vision OCR → Claude parseMenuText → items JSON. Claude odpovědi stripuje markdown code fences před JSON.parse.
 
 ---
 
-## Design systém — "The Digital Draught"
+## Design systém — olivová paleta
 
 ### Pravidla, která NIKDY neporušuj:
 
-1. **Žádné 1px linky.** Separace pouze barvou pozadí nebo `border-2 border-outline-variant/20`
-2. **Žádné čisté bílé v dark mode.** Maximum: `#F0EDE6` (Cream)
-3. **Žádné drop-shadow na kartách.** Hierarchie přes barvu pozadí + ghost border
-4. **Čísla vždy Geist Mono + `tabular-nums`**
-5. **Karty vždy `rounded-3xl`**, tlačítka `rounded-2xl`
-6. **Primary tlačítka vždy `beer-gradient`** — `linear-gradient(180deg, #ffbe5b 0%, #e8a020 100%)`
-7. **Press state tlačítek: `active:translate-y-[2px]`** — fyzický klik pocit
+1. **Žádné čisté bílé v dark mode.** Maximum: `#f0f0f0`
+2. **Žádné drop-shadow na kartách.** Hierarchie přes barvu pozadí + ghost border
+3. **Čísla vždy Geist Mono + `tabular-nums`**
+4. **Karty `rounded-2xl`** (16px), tlačítka `rounded-xl` (12px), malá tlačítka `rounded-lg` (8px)
+5. **Primary tlačítka `bg-primary text-on-primary`** — olivová #8A9900, bílý text
+6. **Press state tlačítek: `active:scale-90` nebo `active:translate-y-0.5`**
+7. **Ikony výhradně z lucide-react** — žádné Material Symbols
 
 ### Tailwind color tokeny (dark mode výchozí):
 ```
-surface:                  #131412
-surface-container:        #1f201e
-surface-container-low:    #1b1c1a
-surface-container-high:   #292a28
-surface-container-highest:#343533
-surface-variant:          #343533
-surface-bright:           #393937
-on-surface:               #e4e2de
-on-surface-variant:       #d6c4ae
-primary:                  #ffbe5b
-primary-container:        #e8a020
-on-primary:               #442b00
-on-primary-container:     #5b3b00
-outline:                  #9e8e7a
-outline-variant:          #514534
-error:                    #ffb4ab
-error-container:          #93000a
+background:               #0d0d0e
+surface:                  #141415
+surface-container:        #1c1c1e
+on-surface:               #f0f0f0
+on-surface-variant:       #a0a0a4
+primary:                  #8A9900   ← olivová
+on-primary:               #ffffff
+outline:                  #5a5a5e
+outline-variant:          #232325
+error:                    #e05555
+error-container:          #7a1c1c
 ```
 
 ### Light mode (třída `.light` na `<html>`):
 ```
-surface:                  #F7F5F0
-surface-container-highest:#FFFFFF
-on-surface:               #1A1916
-primary:                  #C4780A    ← tmavší zlatá — kontrast na světlém
+background:               #f5f5f0
+surface:                  #ebebeb
+on-surface:               #1a1a16
+primary:                  #6b7700   ← tmavší olivová pro kontrast
+```
+
+### CSS utility třídy (globals.css):
+```css
+.accent-shadow { box-shadow: 0 4px 24px rgba(138, 153, 0, 0.18); }
+.grain-texture { SVG noise, opacity: 0.04, pointer-events: none }
 ```
 
 ### Dark/Light mode přepínání:
@@ -242,36 +187,37 @@ export const haptic = (ms = 10) => {
 
 ## AI skenování ceníku
 
+### Architektura (hybrid):
+```
+Klient → /api/scan → Google Cloud Vision (OCR) → Claude parseMenuText → JSON items
+```
+
 ### API Route: `/api/scan`
 ```ts
-// Vstup: FormData s klíčem "image" (File)
-// Výstup: JSON { items: Array<{ name: string, priceSmall: number, priceLarge: number }> }
+// Vstup: FormData s klíčem "base64" (string, base64 JPEG)
+// Výstup: JSON { items: Array<{ name: string, priceSmall: number|null, priceLarge: number|null }> }
+// export const maxDuration = 60  ← nutné pro Vision + Claude kombinaci
 ```
 
-### Komprimace obrázku (client side, před odesláním):
+### Komprimace obrázku (client side, `scan/page.tsx`):
 ```ts
-// Max 1500px na delší straně
-// JPEG kvalita 0.82
-// Canvas API pro resize
-// Pak jako base64 nebo Blob do FormData
+// Max 1500px na delší straně, JPEG kvalita 0.82, Canvas API
+// formData.append('base64', base64)  ← string, ne File pod klíčem 'image'!
 ```
 
-### Anthropic Vision prompt (v `lib/anthropic.ts`):
+### `lib/googleVision.ts`:
+```ts
+// POST https://vision.googleapis.com/v1/images:annotate
+// Auth: X-Goog-Api-Key header (ne query param — security!)
+// Feature: DOCUMENT_TEXT_DETECTION, languageHints: ['cs', 'sk']
+// Vrací: fullTextAnnotation.text nebo '' pokud prázdné
 ```
-Jsi asistent pro restaurace. Z přiloženého obrázku ceníku nápojů extrahuj seznam nápojů.
-Vrať POUZE JSON v tomto formátu, bez markdown:
-{
-  "items": [
-    { "name": "Pilsner Urquell 0,5l", "priceSmall": null, "priceLarge": 52 },
-    { "name": "Kozel 0,3l", "priceSmall": 38, "priceLarge": null }
-  ]
-}
-Pravidla:
-- name: název nápoje včetně objemu
-- priceSmall: cena malé porce (0,3l nebo 0,2l) nebo null
-- priceLarge: cena velké porce (0,5l nebo 0,4l) nebo null
-- Zahrň pouze nápoje s jasnou cenou
-- Ignoruj jídla
+
+### `lib/anthropic.ts` — `parseMenuText(ocrText)`:
+```ts
+// Model: claude-sonnet-4-6, max_tokens: 2048
+// Vstup: surový text z OCR, výstup: ScannedItem[]
+// Stripuje markdown code fences před JSON.parse (Claude občas obalí odpověď do ```json```)
 ```
 
 ### Po skenování — Modal s checkboxy:
@@ -339,9 +285,12 @@ create table drink_logs (
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ANTHROPIC_API_KEY=...          # pouze server-side, nikdy NEXT_PUBLIC_
+GOOGLE_VISION_API_KEY=...      # pouze server-side, Google Cloud Console
 ```
 
-**Nikdy neposílej `ANTHROPIC_API_KEY` na klienta.** Vždy přes `/api/scan` route.
+**Nikdy neposílej API klíče na klienta.** Vždy přes `/api/scan` route.
+
+**Pozor při vkládání klíčů na Vercel:** klíč musí být bez trailing newline/mezery — Node.js odmítne HTTP header s neviditelným znakem a hodí `TypeError: is not a legal HTTP header value`.
 
 ---
 
@@ -448,7 +397,7 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - **TypeScript strict mode** — žádné `any`
 - **Komponenty:** PascalCase — soubory i export. Skutečná konvence v projektu: `UserCard.tsx`, `BottomNav.tsx` (PascalCase, ne kebab-case)
 - **Server Components výchozí** — `"use client"` pouze kde je nutné (interaktivita, hooks)
-- **Žádné inline styly** — výhradně Tailwind třídy
+- **Inline styly povoleny pouze pro dynamické CSS hodnoty** — konkrétně avatar barvy z `getAvatarStyle()` (`style={{ backgroundColor, color, borderColor }}`). Vše ostatní přes Tailwind třídy.
 - **Žádné `console.log` v produkci** — použij podmínku `process.env.NODE_ENV === 'development'`
 - **Error boundaries** kolem AI-dependent komponent
 - **Loading states** vždy — skeleton loader, ne spinner
@@ -464,36 +413,40 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - ❌ `ANTHROPIC_API_KEY` na klientu
 - ❌ Celé stránky jako Client Components — jen interaktivní části
 - ❌ `any` TypeScript typ
-- ❌ Emoji v UI — pouze ikony (Material Symbols)
+- ❌ Emoji v UI — pouze ikony (lucide-react)
+- ❌ Material Symbols — nahrazeno lucide-react, nepoužívat
+- ❌ `beer-gradient`, `brewery-shadow` — odstraněno, použij `bg-primary`, `accent-shadow`
+- ❌ `getAvatarClasses()` nebo `getAvatarColor()` — odstraněno, použij `getAvatarStyle(name)`
 - ❌ Anglické texty v UI — vše česky
 
 ---
 
 ## Co je hotové
 
-- ✅ Root layout s ThemeProvider + PWA meta + Google Fonts
+- ✅ Root layout s ThemeProvider + PWA meta (bez Material Symbols, jen Geist fonty)
 - ✅ PWA ikony (`public/icon-192.png`, `public/icon-512.png`) + `public/manifest.json`
 - ✅ Onboarding stránka — search, list hospod, skeleton loader, FAB, modal pro novou hospodu + editace hospody
 - ✅ SessionContext — celý state management (useReducer), optimistické aktualizace logů, CRUD pro pub/drinks/users
 - ✅ ThemeContext — dark/light přepínání s localStorage persistencí
 - ✅ `[pubId]/layout.tsx` — SessionProvider wrapper
 - ✅ Hlavní counting stránka (`[pubId]/page.tsx`) — vertikální seznam nápojů, UserCard s rozpisem pití
-- ✅ `[pubId]/account/page.tsx` — přehled útrat po osobách, uzavření session
+- ✅ `[pubId]/account/page.tsx` — olivová total karta, per-person breakdown, uzavření session
 - ✅ `[pubId]/settings/page.tsx` — editace hospody, editace/mazání nápojů, odkaz na sken
-- ✅ `[pubId]/scan/page.tsx` — skenování ceníku (AI vision)
-- ✅ `[pubId]/users/page.tsx` — přidání, editace a odebrání uživatelů
-- ✅ API route `/api/scan` — Anthropic vision
-- ✅ Komponenty: BottomNav (s Account+Settings routami), DrinkChips (vertikální seznam), UserCard (drink breakdown), ScanModal, ThemeToggle
-- ✅ UI primitiva: Modal, Toast (s useToast hookem a ToastProvider)
-- ✅ Lib: supabase, anthropic, colors, haptics
+- ✅ `[pubId]/scan/page.tsx` — skenování ceníku (Google Vision OCR + Claude)
+- ✅ `[pubId]/users/page.tsx` — přidání, editace a odebrání uživatelů, zemité avatary
+- ✅ API route `/api/scan` — hybrid Google Vision OCR + Claude text parsing
+- ✅ `lib/googleVision.ts` — Google Cloud Vision REST wrapper
+- ✅ Komponenty: BottomNav (plovoucí karta, Lucide), DrinkChips (vertikální seznam, Lucide), UserCard (inline avatar, breakdown pod tlačítky), ScanModal, ThemeToggle (Lucide Moon/Sun)
+- ✅ UI primitiva: Modal (Lucide X), Toast (Lucide ikony, s useToast hookem a ToastProvider)
+- ✅ Lib: supabase, googleVision, anthropic, colors (getAvatarStyle), haptics
 - ✅ Typy: Pub, Drink, Session, SessionUser, DrinkLog, ScannedItem, DrinkBreakdownItem
 - ✅ Supabase migrace: `supabase/migrations/001_initial_schema.sql`
-- ✅ Deploy na Vercel (hospoda-pro.vercel.app), GitHub auto-deploy z `main`
+- ✅ Kompletní redesign — olivová paleta, lucide-react, zaoblené rohy (ne pills)
+- ✅ Deploy na Vercel (hospoda.pro), GitHub auto-deploy z `main`
 
 ## Co zbývá implementovat
 
-- ⬜ Doména hospoda.pro → nasměrovat na nový Vercel projekt (čeká se na DNS ověření)
 - ⬜ Service worker / offline podpora
-- ⬜ Supabase Auth integrace (zatím se nepřihlašuje — anonymní přístup)
+- ⬜ Supabase Auth integrace (zatím anonymní přístup)
 - ⬜ Error boundaries kolem AI-dependent komponent
 - ⬜ Testování na reálném iOS (haptic, safe-area, PWA install)
