@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { extractTextFromImage } from '@/lib/googleVision'
 import { parseMenuText } from '@/lib/anthropic'
 
+export const maxDuration = 60 // sekund — potřebujeme Vision + Claude
+
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData()

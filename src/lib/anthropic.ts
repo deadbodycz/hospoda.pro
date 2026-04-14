@@ -1,6 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ScannedItem } from '@/types'
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  throw new Error('ANTHROPIC_API_KEY není nastavený')
+}
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 const PARSE_PROMPT = `Z níže uvedeného textu z ceníku nápojů extrahuj seznam nápojů.
