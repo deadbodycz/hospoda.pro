@@ -1,22 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { extractTextFromImage } from '@/lib/googleVision'
 import { parseMenuText } from '@/lib/anthropic'
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json()
-
-    if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Chybí OCR text.' }, { status: 400 })
+    const form = await req.formData()
+    const file = form.get('image') as File | null
+    if (!file) {
+      return NextResponse.json({ error: 'Chybí obrázek.' }, { status: 400 })
     }
 
-    const items = await parseMenuText(text)
+    const arrayBuffer = await file.arrayBuffer()
+    const base64 = Buffer.from(arrayBuffer).toString('base64')
+
+    // Step 1: Google Vision OCR
+    const ocrText = await extractTextFromImage(base64)
+
+    if (!ocrText.trim()) {
+      return NextResponse.json({ items: [] })
+    }
+
+    // Step 2: Claude parses the extracted text
+    const items = await parseMenuText(ocrText)
+
     return NextResponse.json({ items })
   } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[/api/scan]', err)
-    }
+    console.error('[scan]', err)
     return NextResponse.json(
-      { error: 'Nepodařilo se rozpoznat ceník.' },
+      { error: 'Nepodařilo se rozpoznat text z obrázku. Zkus to znovu.' },
       { status: 500 }
     )
   }
