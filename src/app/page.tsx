@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Search, MapPin, ChevronRight, Plus, Pencil, CalendarDays } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
@@ -115,8 +116,7 @@ export default function OnboardingPage() {
       {/* Header */}
       <header className="fixed top-0 w-full h-12 z-50 bg-zinc-950/60 backdrop-blur-md border-b-2 border-zinc-800/20 flex justify-between items-center px-6">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-amber-500 icon-filled">local_bar</span>
-          <h1 className="text-amber-500 font-bold tracking-tighter text-xl">hospoda.pro</h1>
+          <h1 className="text-[#a8bc00] font-bold tracking-tighter text-xl">hospoda.pro</h1>
         </div>
         <ThemeToggle />
       </header>
@@ -130,17 +130,15 @@ export default function OnboardingPage() {
           <label className="block font-mono text-xs uppercase tracking-widest text-outline mb-2 ml-1">
             Najdi svou hospodu
           </label>
-          <div className="relative">
+          <div className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 mx-0">
+            <Search className="w-4 h-4 text-outline flex-shrink-0" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Hledej hospody nebo města…"
-              className="w-full bg-surface-container-low border-2 border-outline-variant rounded-2xl py-3 px-5 pl-12 text-on-surface focus:border-primary focus:outline-none transition-all placeholder:text-outline/50 text-base"
+              className="flex-1 bg-transparent text-on-surface focus:outline-none placeholder:text-outline/50 text-base"
             />
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary text-xl">
-              search
-            </span>
           </div>
         </div>
 
@@ -183,10 +181,12 @@ export default function OnboardingPage() {
       {/* FAB */}
       <button
         onClick={() => setShowNewPubModal(true)}
-        className="fixed bottom-24 right-6 w-16 h-16 bg-primary text-on-primary-container rounded-2xl flex items-center justify-center shadow-[0_24px_24px_-12px_rgba(232,160,32,0.3)] border-2 border-on-primary-container hover:-translate-y-1 active:translate-y-0 transition-all z-40"
+        className="fixed bottom-6 right-4 flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-3 rounded-xl accent-shadow active:translate-y-0.5 transition-all text-sm z-40"
+        style={{ bottom: 'max(env(safe-area-inset-bottom) + 16px, 24px)' }}
         aria-label="Přidat novou hospodu"
       >
-        <span className="material-symbols-outlined text-3xl font-bold">add</span>
+        <Plus className="w-4 h-4" />
+        Přidat hospodu
       </button>
 
       <BottomNav />
@@ -226,14 +226,14 @@ export default function OnboardingPage() {
           <div className="flex gap-3">
             <button
               onClick={() => setEditingPub(null)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-2xl active:scale-95 transition-transform text-sm"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
             >
               Zrušit
             </button>
             <button
               onClick={savePub}
               disabled={!editName.trim() || saving}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-2.5 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
+              className="flex-1 bg-primary text-on-primary font-bold py-2.5 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
             >
               {saving ? 'Ukládám…' : 'Uložit'}
             </button>
@@ -276,14 +276,14 @@ export default function OnboardingPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowNewPubModal(false)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-2xl active:scale-95 transition-transform"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-xl active:scale-95 transition-transform"
             >
               Zrušit
             </button>
             <button
               onClick={createPub}
               disabled={!newName.trim() || creating}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-3 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40"
+              className="flex-1 bg-primary text-on-primary font-bold py-3 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40"
             >
               {creating ? 'Vytvářím…' : 'Vytvořit'}
             </button>
@@ -302,36 +302,32 @@ function PubCard({
   onEdit: (e: React.MouseEvent) => void
 }) {
   return (
-    <Link
-      href={`/${pub.id}`}
-      className="group bg-surface-container-low rounded-3xl p-4 border-2 border-transparent hover:border-outline-variant transition-all cursor-pointer relative overflow-hidden block"
-    >
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-      <div className="flex justify-between items-start relative z-10">
-        <div className="space-y-0.5">
-          <h3 className="font-bold text-base text-primary">{pub.name}</h3>
-          {pub.address && (
-            <p className="text-on-surface-variant text-xs font-medium">{pub.address}</p>
-          )}
+    <div className="relative">
+      <Link
+        href={`/${pub.id}`}
+        className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform block"
+      >
+        <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
+          <MapPin className="w-4 h-4 text-[#a8bc00]" />
         </div>
-        <button
-          onClick={onEdit}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline flex-shrink-0 ml-2"
-          aria-label={`Upravit ${pub.name}`}
-        >
-          <span className="material-symbols-outlined text-lg">edit</span>
-        </button>
-      </div>
-      <div className="mt-3 flex items-center justify-between text-outline">
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-sm">calendar_today</span>
-          <span className="text-xs uppercase font-mono tracking-widest">{timeAgo(pub.created_at)}</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-on-surface text-sm truncate">{pub.name}</p>
+          {pub.address && <p className="text-xs text-outline truncate">{pub.address}</p>}
+          <div className="flex items-center gap-1 mt-0.5">
+            <CalendarDays className="w-3 h-3 text-outline" />
+            <span className="text-xs font-mono text-outline uppercase tracking-widest">{timeAgo(pub.created_at)}</span>
+          </div>
         </div>
-        <span className="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">
-          arrow_forward
-        </span>
-      </div>
-    </Link>
+        <ChevronRight className="w-4 h-4 text-outline flex-shrink-0" />
+      </Link>
+      <button
+        onClick={onEdit}
+        className="absolute top-2 right-8 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
+        aria-label={`Upravit ${pub.name}`}
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+    </div>
   )
 }
 
@@ -341,7 +337,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <div className="relative w-32 h-32 flex items-center justify-center">
         <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl" />
         <div className="relative w-24 h-24 bg-surface-container-highest border-2 border-outline-variant rounded-xl flex items-center justify-center">
-          <span className="material-symbols-outlined text-5xl text-outline-variant">sports_bar</span>
+          <MapPin className="w-10 h-10 text-outline-variant" />
         </div>
       </div>
       <div className="space-y-2">
@@ -352,7 +348,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       </div>
       <button
         onClick={onAdd}
-        className="bg-primary text-on-primary-container px-8 py-3 rounded-2xl font-bold border-2 border-on-primary-container active:scale-95 transition-all shadow-lg"
+        className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold active:scale-95 transition-all shadow-lg"
       >
         Přidat první hospodu
       </button>
