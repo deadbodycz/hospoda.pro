@@ -8,7 +8,6 @@ import {
   useReducer,
 } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getAvatarColor } from '@/lib/colors'
 import type { Drink, DrinkLog, Pub, Session, SessionUser } from '@/types'
 
 // ── State ─────────────────────────────────────────────────────
@@ -254,7 +253,8 @@ export function SessionProvider({
   const addUser = useCallback(
     async (name: string) => {
       if (!state.session) return
-      const avatar_color = getAvatarColor(name)
+      // Store name as avatar_color key — color is derived deterministically from name at render time
+      const avatar_color = name
       const { data, error } = await supabase
         .from('session_users')
         .insert({ session_id: state.session.id, name, avatar_color })
