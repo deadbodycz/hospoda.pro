@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, ScanLine, Beer, UserPlus, AlertCircle } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { DrinkChips } from '@/components/DrinkChips'
 import { UserCard } from '@/components/UserCard'
@@ -46,7 +47,7 @@ export default function DraughtCounterPage({
     return (
       <div className="min-h-[100dvh] flex items-center justify-center px-6">
         <div className="text-center space-y-4">
-          <span className="material-symbols-outlined text-4xl text-error">error</span>
+          <AlertCircle className="w-10 h-10 text-error mx-auto" />
           <p className="text-on-surface-variant text-sm">
             {error ?? 'Hospoda nenalezena.'}
           </p>
@@ -61,20 +62,20 @@ export default function DraughtCounterPage({
   return (
     <div className="min-h-[100dvh] bg-background text-on-surface pb-24">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-zinc-900/60 backdrop-blur-md border-b-2 border-zinc-800/20 h-14 flex items-center px-4 justify-between">
+      <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant h-14 flex items-center px-4 justify-between">
         <div className="flex items-center gap-2.5">
           <Link
             href="/"
-            className="w-9 h-9 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95"
+            className="w-9 h-9 flex items-center justify-center hover:bg-surface-container rounded-lg transition-colors active:scale-95"
             aria-label="Zpět"
           >
-            <span className="material-symbols-outlined text-on-surface text-xl">arrow_back</span>
+            <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
           </Link>
           <div className="flex flex-col">
             <h1 className="text-on-surface font-bold tracking-tight text-base leading-tight">
               {pub.name}
             </h1>
-            <span className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
+            <span className="text-outline font-mono text-[10px] uppercase tracking-widest">
               {session?.closed_at ? 'uzavřeno' : 'v provozu'}
             </span>
           </div>
@@ -83,10 +84,10 @@ export default function DraughtCounterPage({
           <ThemeToggle />
           <Link
             href={`/${params.pubId}/scan`}
-            className="w-9 h-9 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95"
+            className="w-9 h-9 flex items-center justify-center hover:bg-surface-container rounded-lg transition-colors active:scale-95"
             aria-label="Skenovat ceník"
           >
-            <span className="material-symbols-outlined text-zinc-400 text-xl">photo_camera</span>
+            <ScanLine className="w-5 h-5 text-outline" />
           </Link>
         </div>
       </header>
@@ -139,13 +140,13 @@ export default function DraughtCounterPage({
 function NoDrinksPrompt({ pubId }: { pubId: string }) {
   return (
     <div className="mt-8 text-center py-8 space-y-3">
-      <span className="material-symbols-outlined text-4xl text-outline-variant">menu_book</span>
+      <Beer className="w-10 h-10 text-outline mx-auto" />
       <p className="text-on-surface-variant text-sm">Zatím žádné nápoje.</p>
       <Link
         href={`/${pubId}/scan`}
-        className="inline-flex items-center gap-2 bg-beer-gradient text-on-primary-container font-bold px-5 py-2.5 rounded-2xl brewery-shadow text-sm"
+        className="inline-flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-2.5 rounded-xl accent-shadow text-sm"
       >
-        <span className="material-symbols-outlined text-base">photo_camera</span>
+        <ScanLine className="w-4 h-4" />
         Skenovat ceník
       </Link>
     </div>
@@ -155,13 +156,13 @@ function NoDrinksPrompt({ pubId }: { pubId: string }) {
 function NoUsersPrompt({ pubId }: { pubId: string }) {
   return (
     <div className="mt-8 text-center py-8 space-y-3">
-      <span className="material-symbols-outlined text-4xl text-outline-variant">group_add</span>
+      <UserPlus className="w-10 h-10 text-outline mx-auto" />
       <p className="text-on-surface-variant text-sm">Nikdo u stolu. Přidej lidi!</p>
       <Link
         href={`/${pubId}/users`}
-        className="inline-flex items-center gap-2 bg-beer-gradient text-on-primary-container font-bold px-5 py-2.5 rounded-2xl brewery-shadow text-sm"
+        className="inline-flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-2.5 rounded-xl accent-shadow text-sm"
       >
-        <span className="material-symbols-outlined text-base">person_add</span>
+        <UserPlus className="w-4 h-4" />
         Přidat lidi
       </Link>
     </div>
@@ -171,7 +172,7 @@ function NoUsersPrompt({ pubId }: { pubId: string }) {
 function LoadingSkeleton({ pubId }: { pubId: string }) {
   return (
     <div className="min-h-[100dvh] bg-background pb-24">
-      <header className="fixed top-0 w-full z-50 bg-zinc-900/60 backdrop-blur-md border-b-2 border-zinc-800/20 h-14 flex items-center px-4">
+      <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant h-14 flex items-center px-4">
         <div className="w-32 h-4 bg-surface-container-high rounded-full animate-pulse" />
       </header>
       <main className="pt-20 px-4 max-w-md mx-auto space-y-3">
