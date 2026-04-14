@@ -11,14 +11,28 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 1: Google Vision OCR
-    const ocrText = await extractTextFromImage(base64)
+    let ocrText: string
+    try {
+      ocrText = await extractTextFromImage(base64)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[scan][vision]', msg)
+      return NextResponse.json({ error: `Vision: ${msg}` }, { status: 500 })
+    }
 
     if (!ocrText.trim()) {
       return NextResponse.json({ items: [] })
     }
 
     // Step 2: Claude parses the extracted text
-    const items = await parseMenuText(ocrText)
+    let items: Awaited<ReturnType<typeof parseMenuText>>
+    try {
+      items = await parseMenuText(ocrText)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[scan][claude]', msg)
+      return NextResponse.json({ error: `Claude: ${msg}` }, { status: 500 })
+    }
 
     return NextResponse.json({ items })
   } catch (err) {
