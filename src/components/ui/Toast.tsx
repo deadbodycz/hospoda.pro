@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from 'react'
+import { CheckCircle, AlertCircle, Info, type LucideIcon } from 'lucide-react'
 
 type ToastVariant = 'success' | 'error' | 'info'
 
@@ -62,12 +63,12 @@ function Toast({ item }: { item: ToastItem }) {
       ? 'bg-error-container border border-error/30'
       : 'bg-surface-container-highest border-2 border-outline-variant'
 
-  const icon =
+  const Icon: LucideIcon =
     item.variant === 'success'
-      ? 'check_circle'
+      ? CheckCircle
       : item.variant === 'error'
-      ? 'error'
-      : 'info'
+      ? AlertCircle
+      : Info
 
   const textColor =
     item.variant === 'success' || item.variant === 'error'
@@ -83,7 +84,7 @@ function Toast({ item }: { item: ToastItem }) {
         ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}
       `}
     >
-      <span className="material-symbols-outlined text-xl flex-shrink-0">{icon}</span>
+      <Icon className="w-5 h-5 flex-shrink-0" />
       <p className="text-sm font-medium leading-snug">{item.message}</p>
     </div>
   )

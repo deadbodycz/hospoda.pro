@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { X } from 'lucide-react'
 
 interface ModalProps {
   open: boolean
@@ -39,7 +40,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90"
               aria-label="Zavřít"
             >
-              <span className="material-symbols-outlined text-on-surface-variant">close</span>
+              <X className="w-5 h-5 text-on-surface-variant" />
             </button>
           </div>
         )}
