@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, Receipt, CheckCircle, Trash2 } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { getAvatarClasses, getInitials } from '@/lib/colors'
+import { getAvatarStyle, getInitials } from '@/lib/colors'
 
 export default function AccountPage({
   params,
@@ -69,9 +70,9 @@ export default function AccountPage({
             className="w-9 h-9 flex items-center justify-center hover:bg-zinc-800/50 rounded-full transition-colors active:scale-95"
             aria-label="Zpět"
           >
-            <span className="material-symbols-outlined text-on-surface text-xl">arrow_back</span>
+            <ArrowLeft className="w-5 h-5 text-on-surface-variant" />
           </Link>
-          <span className="text-amber-500 font-bold tracking-tighter text-base">
+          <span className="text-primary font-bold tracking-tighter text-base">
             {pub?.name ?? 'Hospoda'}
           </span>
         </div>
@@ -91,23 +92,24 @@ export default function AccountPage({
         </section>
 
         {/* Total summary */}
-        <div className="bg-surface-container border-2 border-outline-variant/20 rounded-xl p-4">
+        <div className="bg-primary rounded-2xl p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1">
-                Celková útrata
+              <p className="text-on-primary/60 font-mono text-[10px] uppercase tracking-widest mb-1">
+                {isClosed ? 'Uzavřená útrata' : 'Celková útrata'}
               </p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-mono font-black text-on-surface tabular-nums">
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-mono font-black text-on-primary tabular-nums">
                   {Math.round(sessionTotal)}
                 </span>
-                <span className="text-primary font-bold">Kč</span>
+                <span className="text-on-primary font-bold">Kč</span>
               </div>
+              <p className="text-on-primary/60 text-xs mt-0.5">
+                {sessionDrinkCount}{' '}
+                {sessionDrinkCount === 1 ? 'nápoj' : sessionDrinkCount < 5 ? 'nápoje' : 'nápojů'}
+              </p>
             </div>
-            <span className="px-3 py-1 bg-surface-variant rounded-full text-zinc-400 font-mono text-[10px] uppercase tracking-widest border border-zinc-800/60">
-              {sessionDrinkCount}{' '}
-              {sessionDrinkCount === 1 ? 'nápoj' : sessionDrinkCount < 5 ? 'nápoje' : 'nápojů'}
-            </span>
+            <Receipt className="w-8 h-8 text-on-primary/20" />
           </div>
         </div>
 
@@ -118,7 +120,7 @@ export default function AccountPage({
               Rozpis po osobách
             </h3>
             {users.map((user) => {
-              const avatar = getAvatarClasses(user.avatar_color)
+              const av = getAvatarStyle(user.name)
               const breakdown = userDrinkBreakdown(user.id)
               const total = userTotal(user.id)
               if (breakdown.length === 0) return null
@@ -130,7 +132,8 @@ export default function AccountPage({
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm border-2 ${avatar.bg} ${avatar.text} ${avatar.border}`}
+                        className="w-8 h-8 rounded-lg border flex items-center justify-center font-bold text-xs flex-shrink-0"
+                        style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}
                         aria-hidden
                       >
                         {getInitials(user.name)}
@@ -171,9 +174,9 @@ export default function AccountPage({
           <div className="pt-2 pb-4">
             <button
               onClick={() => setShowConfirm(true)}
-              className="w-full py-3.5 bg-beer-gradient text-on-primary-container font-black uppercase tracking-widest rounded-2xl shadow-xl active:translate-y-1 transition-all border-b-4 border-amber-800/40 flex items-center justify-center gap-2.5 text-sm"
+              className="w-full py-3.5 bg-error/10 text-error border border-error/30 font-bold rounded-xl active:translate-y-0.5 transition-all flex items-center justify-center gap-2 text-sm"
             >
-              <span className="material-symbols-outlined icon-filled text-base">receipt_long</span>
+              <Trash2 className="w-4 h-4" />
               Uzavřít účet
             </button>
           </div>
@@ -181,7 +184,7 @@ export default function AccountPage({
 
         {isClosed && (
           <div className="bg-surface-container border-2 border-outline-variant/20 rounded-xl p-4 text-center">
-            <span className="material-symbols-outlined text-primary text-2xl icon-filled">check_circle</span>
+            <CheckCircle className="w-6 h-6 text-primary mx-auto" />
             <p className="text-on-surface-variant text-sm mt-2">Účet byl uzavřen.</p>
           </div>
         )}
@@ -207,14 +210,14 @@ export default function AccountPage({
           <div className="flex gap-3">
             <button
               onClick={() => setShowConfirm(false)}
-              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-2xl active:scale-95 transition-transform text-sm"
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-3 rounded-xl active:scale-95 transition-transform text-sm"
             >
               Zpět
             </button>
             <button
               onClick={handleClose}
               disabled={closing}
-              className="flex-1 bg-beer-gradient text-on-primary-container font-bold py-3 rounded-2xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
+              className="flex-1 bg-primary text-on-primary font-bold py-3 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm"
             >
               {closing ? 'Uzavírám…' : 'Uzavřít'}
             </button>
