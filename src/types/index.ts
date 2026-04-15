@@ -44,3 +44,34 @@ export interface ScannedItem {
   priceSmall: number | null
   priceLarge: number | null
 }
+
+/** OSM bounding box for Overpass queries */
+export interface Bounds {
+  north: number
+  south: number
+  east: number
+  west: number
+}
+
+/** A pub/bar result from OpenStreetMap */
+export interface OsmPub {
+  id: string
+  name: string
+  lat: number
+  lon: number
+  address?: string
+  phone?: string
+  website?: string
+  opening_hours?: string
+  tags?: Record<string, string>
+}
+
+/** Raw element from Overpass API JSON response */
+export interface OverpassElement {
+  type: 'node' | 'way'
+  id: number
+  lat?: number
+  lon?: number
+  center?: { lat: number; lon: number }
+  tags: Record<string, string>
+}
