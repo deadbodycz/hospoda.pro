@@ -93,12 +93,16 @@ src/
 
 ### Klíčové implementační detaily:
 
-- **SessionContext** (`contexts/SessionContext.tsx`) — centrální state celé pub session. Používá `useReducer` s explicitními akcemi. Obsahuje optimistické aktualizace pro `incrementDrink` (temp ID → nahrazení reálným po DB response). Exponuje: `addUser`, `removeUser`, `updateUser`, `addDrinks`, `updateDrink`, `removeDrink`, `updatePub`, `incrementDrink`, `decrementDrink`, `closeSession`, `drinkCount`, `userTotal`, `userDrinkBreakdown`, `sessionTotal`, `sessionDrinkCount`, `lastDrink`. Exportuje typ `DrinkBreakdownItem { drink, count, subtotal }`.
+- **SessionContext** (`contexts/SessionContext.tsx`) — centrální state celé pub session. Používá `useReducer` s explicitními akcemi. Obsahuje optimistické aktualizace pro `incrementDrink` (temp ID → nahrazení reálným po DB response). Exponuje: `addUser`, `removeUser`, `updateUser`, `addDrinks`, `updateDrink`, `removeDrink`, `clearAllDrinks`, `updatePub`, `incrementDrink`, `decrementDrink`, `closeSession`, `drinkCount`, `userTotal`, `userDrinkBreakdown`, `sessionTotal`, `sessionDrinkCount`, `lastDrink`. Exportuje typ `DrinkBreakdownItem { drink, count, subtotal }`.
+- **`clearAllDrinks`** — smaže všechny nápoje daného pubu z DB (`DELETE FROM drinks WHERE pub_id = ...`). Funguje díky `ON DELETE SET NULL` na `drink_logs.drink_id` — záznamy pití zůstanou (účet je přesný), jen ztratí odkaz na konkrétní nápoj.
+- **`DrinkLog.drink_id`** je `string | null` — po smazání nápoje se nastaví na null. `userDrinkBreakdown` tyto záznamy přeskočí (`if (!drink || !log.drink_id) continue`), ale `userTotal` a `sessionTotal` je stále zahrnují (pracují jen s `unit_price`).
 - **`[pubId]/layout.tsx`** — Server Component wrapper, který obaluje celou pub sekci do `<SessionProvider pubId={params.pubId}>`.
 - **Soubory komponent** jsou PascalCase (např. `UserCard.tsx`, `BottomNav.tsx`), ne kebab-case.
 - **`lib/colors.ts`** — exportuje `getAvatarStyle(name: string): AvatarStyle` a `getInitials(name)`. `AvatarStyle = { bg, color, border }` jsou CSS rgba/hex hodnoty pro inline `style={}`. **Nepoužívej Tailwind třídy pro avatary** — použij `style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}`.
 - **`session_users.avatar_color`** — sloupec sice existuje, ale ukládá se do něj **jméno uživatele** (ne Tailwind barva). Barva avataru se derivuje deterministicky z jména za běhu přes `getAvatarStyle(user.name)`.
 - **`/api/scan` route** — čte `base64` (string) z FormData, **ne** `image` (File). Má `export const maxDuration = 60`. Tok: base64 → Google Vision OCR → Claude parseMenuText → items JSON. Claude odpovědi stripuje markdown code fences před JSON.parse.
+- **Onboarding `page.tsx`** — smazání hospody volá `supabase.from('pubs').delete().eq('id', id)`, poté `await loadPubs()` + `router.refresh()` pro synchronizaci s DB (obchází Next.js router cache). Stránka má `visibilitychange` listener pro re-fetch při návratu ze záložky nebo mobilního přepínání.
+- **Next.js router cache** — Client Component `page.tsx` na `/` může být cachovaný. Po každé mutaci dat (create/delete pub) volej `await loadPubs()` + `router.refresh()`, jinak se stará data vrátí po navigaci zpět.
 
 ---
 
@@ -241,7 +245,7 @@ create table pubs (
 -- Nápoje / ceník hospody
 create table drinks (
   id uuid primary key default gen_random_uuid(),
-  pub_id uuid references pubs(id) on delete cascade,
+  pub_id uuid not null references pubs(id) on delete cascade,
   name text not null,
   price_small numeric(8,2),
   price_large numeric(8,2),
@@ -251,7 +255,7 @@ create table drinks (
 -- Relace uživatel × session
 create table sessions (
   id uuid primary key default gen_random_uuid(),
-  pub_id uuid references pubs(id),
+  pub_id uuid not null references pubs(id) on delete cascade,  -- ← CASCADE (opraveno migrací 004)
   created_at timestamptz default now(),
   closed_at timestamptz
 );
@@ -259,22 +263,35 @@ create table sessions (
 -- Uživatelé v session
 create table session_users (
   id uuid primary key default gen_random_uuid(),
-  session_id uuid references sessions(id) on delete cascade,
+  session_id uuid not null references sessions(id) on delete cascade,
   name text not null,
-  avatar_color text not null  -- tailwind color name
+  avatar_color text not null  -- ukládá se jméno uživatele, barva se derivuje za běhu
 );
 
 -- Záznamy nápojů
 create table drink_logs (
   id uuid primary key default gen_random_uuid(),
-  session_id uuid references sessions(id) on delete cascade,
-  session_user_id uuid references session_users(id) on delete cascade,
-  drink_id uuid references drinks(id),
-  quantity integer not null default 1,
+  session_id uuid not null references sessions(id) on delete cascade,
+  session_user_id uuid not null references session_users(id) on delete cascade,
+  drink_id uuid references drinks(id) on delete set null,  -- ← nullable + SET NULL (migrace 002)
+  quantity integer not null default 1 check (quantity > 0),
   unit_price numeric(8,2) not null,
   logged_at timestamptz default now()
 );
 ```
+
+### Migrace (v pořadí):
+| Soubor | Co dělá |
+|--------|---------|
+| `001_initial_schema.sql` | Základní schéma + indexy |
+| `002_drink_logs_nullable_drink_id.sql` | `drink_id` → nullable + ON DELETE SET NULL (bylo RESTRICT) |
+| `003_disable_rls.sql` | Vypíná RLS na všech tabulkách (bez auth, DELETE bylo blokováno) |
+| `004_fix_sessions_pub_id_cascade.sql` | `sessions_pub_id_fkey` → CASCADE (bylo NO ACTION, blokovalo DELETE pubs) |
+
+### Pasti při práci s DB:
+- **`IF NOT EXISTS` v migraci nepřepíše existující tabulku** — pokud tabulka vznikla přes dashboard, FK constraints mohou mít jiná pravidla než v SQL. Vždy ověř přes `information_schema.referential_constraints`.
+- **RLS bez politik = tiché selhání DELETE** — Supabase má RLS enabled by default pro nové tabulky. DELETE vrátí HTTP 204 ale nesmaže nic. Používej `DISABLE ROW LEVEL SECURITY` nebo přidej policies.
+- **Správný connection string pro `npx supabase db push`:** `postgresql://postgres:[heslo]@db.[ref].supabase.co:5432/postgres` (přímé připojení, NE pooler na portu 6543).
 
 ---
 
@@ -322,7 +339,8 @@ Migrace jsou v `supabase/migrations/`. Supabase CLI je dostupné přes `npx supa
 # supabase/migrations/NNN_popis.sql
 
 # 2. Spusť migraci přímo (bez čekání na uživatele)
-npx supabase db push --db-url "postgresql://postgres.[ref]:[heslo]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+# POZOR: přímé připojení (db subdoména + port 5432), NE pooler na 6543!
+npx supabase db push --db-url "postgresql://postgres:[heslo]@db.[ref].supabase.co:5432/postgres"
 
 # 3. Commitni a pushni (automaticky, bez čekání na pokyn)
 git add supabase/migrations/NNN_popis.sql
@@ -418,6 +436,8 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - ❌ `beer-gradient`, `brewery-shadow` — odstraněno, použij `bg-primary`, `accent-shadow`
 - ❌ `getAvatarClasses()` nebo `getAvatarColor()` — odstraněno, použij `getAvatarStyle(name)`
 - ❌ Anglické texty v UI — vše česky
+- ❌ Rychlé přidání osob (SUGGESTED_NAMES) — odstraněno, jen tlačítko „Přidat osobu"
+- ❌ `ON DELETE RESTRICT` na `drink_logs.drink_id` — používej `ON DELETE SET NULL` (jinak mazání ceníku selže pokud existují záznamy pití)
 
 ---
 
@@ -425,22 +445,22 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 
 - ✅ Root layout s ThemeProvider + PWA meta (bez Material Symbols, jen Geist fonty)
 - ✅ PWA ikony (`public/icon-192.png`, `public/icon-512.png`) + `public/manifest.json`
-- ✅ Onboarding stránka — search, list hospod, skeleton loader, FAB, modal pro novou hospodu + editace hospody
-- ✅ SessionContext — celý state management (useReducer), optimistické aktualizace logů, CRUD pro pub/drinks/users
+- ✅ Onboarding stránka — search, list hospod, skeleton loader, FAB, modal pro novou hospodu + editace hospody + smazání hospody (s potvrzením, CASCADE)
+- ✅ SessionContext — celý state management (useReducer), optimistické aktualizace logů, CRUD pro pub/drinks/users, `clearAllDrinks`
 - ✅ ThemeContext — dark/light přepínání s localStorage persistencí
 - ✅ `[pubId]/layout.tsx` — SessionProvider wrapper
 - ✅ Hlavní counting stránka (`[pubId]/page.tsx`) — vertikální seznam nápojů, UserCard s rozpisem pití
 - ✅ `[pubId]/account/page.tsx` — olivová total karta, per-person breakdown, uzavření session
-- ✅ `[pubId]/settings/page.tsx` — editace hospody, editace/mazání nápojů, odkaz na sken
+- ✅ `[pubId]/settings/page.tsx` — editace hospody, editace/mazání nápojů, smazání celého ceníku, odkaz na sken
 - ✅ `[pubId]/scan/page.tsx` — skenování ceníku (Google Vision OCR + Claude)
-- ✅ `[pubId]/users/page.tsx` — přidání, editace a odebrání uživatelů, zemité avatary
+- ✅ `[pubId]/users/page.tsx` — přidání, editace a odebrání uživatelů, zemité avatary (bez rychlého přidání přednastavených jmen)
 - ✅ API route `/api/scan` — hybrid Google Vision OCR + Claude text parsing
 - ✅ `lib/googleVision.ts` — Google Cloud Vision REST wrapper
 - ✅ Komponenty: BottomNav (plovoucí karta, Lucide), DrinkChips (vertikální seznam, Lucide), UserCard (inline avatar, breakdown pod tlačítky), ScanModal, ThemeToggle (Lucide Moon/Sun)
 - ✅ UI primitiva: Modal (Lucide X), Toast (Lucide ikony, s useToast hookem a ToastProvider)
 - ✅ Lib: supabase, googleVision, anthropic, colors (getAvatarStyle), haptics
 - ✅ Typy: Pub, Drink, Session, SessionUser, DrinkLog, ScannedItem, DrinkBreakdownItem
-- ✅ Supabase migrace: `supabase/migrations/001_initial_schema.sql`
+- ✅ Supabase migrace: 001–004 (schema, nullable drink_id, disable RLS, cascade fix)
 - ✅ Kompletní redesign — olivová paleta, lucide-react, zaoblené rohy (ne pills)
 - ✅ Deploy na Vercel (hospoda.pro), GitHub auto-deploy z `main`
 
