@@ -30,6 +30,8 @@ Tento soubor řídí chování Claude Code v tomto projektu. Čti ho celý před
 | State | React useState / useContext + useReducer v SessionContext (žádný Zustand) |
 | Auth | Supabase Auth (anonymní session nebo email magic link) |
 | Image opt. | sharp (devDependency, Next.js image optimization) |
+| Mapa | leaflet@^1.9.4 + @types/leaflet (dynamicky importováno, SSR: false) |
+| Mapová data | OpenStreetMap tiles + Overpass API (vyhledávání hospod v okolí) |
 
 ---
 
@@ -68,13 +70,16 @@ src/
 │   │   ├── scan/page.tsx        ← Skenování ceníku
 │   │   └── users/page.tsx       ← Přidání a editace uživatelů ke stolu
 │   └── api/
-│       └── scan/route.ts        ← API route pro Anthropic vision
+│       ├── scan/route.ts        ← API route pro Anthropic vision
+│       └── overpass/route.ts    ← Proxy na Overpass API (rate limit, cache)
 ├── components/
 │   ├── ui/
 │   │   ├── Modal.tsx            ← Základní modal (backdrop, drag-to-close)
 │   │   └── Toast.tsx            ← Toast + useToast hook (ToastProvider)
 │   ├── BottomNav.tsx            ← Spodní navigace (pubId prop, aktivní tab)
 │   ├── DrinkChips.tsx           ← Vertikální seznam nápojů pro výběr
+│   ├── PubFinderMap.tsx         ← Leaflet mapa (Client Component, SSR: false), Overpass markery
+│   ├── PubFinderModal.tsx       ← Full-screen overlay: mapa + seznam hospod z OSM
 │   ├── ScanModal.tsx            ← Modal s výsledky AI skenování (checkboxy)
 │   ├── ThemeToggle.tsx          ← Tlačítko pro přepínání dark/light módu
 │   └── UserCard.tsx             ← Karta uživatele s +/- counterem
@@ -86,9 +91,10 @@ src/
 │   ├── googleVision.ts          ← Google Cloud Vision REST API wrapper (OCR)
 │   ├── anthropic.ts             ← parseMenuText(ocrText) — Claude parsuje text z OCR
 │   ├── colors.ts                ← getAvatarStyle(name) → { bg, color, border } CSS hodnoty
-│   └── haptics.ts               ← navigator.vibrate wrapper
+│   ├── haptics.ts               ← navigator.vibrate wrapper
+│   └── overpass.ts              ← searchPubsNearby(bounds) — klientský wrapper s 5min cache
 └── types/
-    └── index.ts                 ← Pub, Drink, Session, SessionUser, DrinkLog, ScannedItem
+    └── index.ts                 ← Pub, Drink, Session, SessionUser, DrinkLog, ScannedItem, OsmPub, OverpassElement, Bounds
 ```
 
 ### Klíčové implementační detaily:
@@ -103,6 +109,11 @@ src/
 - **`/api/scan` route** — čte `base64` (string) z FormData, **ne** `image` (File). Má `export const maxDuration = 60`. Tok: base64 → Google Vision OCR → Claude parseMenuText → items JSON. Claude odpovědi stripuje markdown code fences před JSON.parse.
 - **Onboarding `page.tsx`** — smazání hospody volá `supabase.from('pubs').delete().eq('id', id)`, poté `await loadPubs()` + `router.refresh()` pro synchronizaci s DB (obchází Next.js router cache). Stránka má `visibilitychange` listener pro re-fetch při návratu ze záložky nebo mobilního přepínání.
 - **Next.js router cache** — Client Component `page.tsx` na `/` může být cachovaný. Po každé mutaci dat (create/delete pub) volej `await loadPubs()` + `router.refresh()`, jinak se stará data vrátí po navigaci zpět.
+- **`PubFinderMap.tsx`** — Leaflet se importuje výhradně přes `await import('leaflet')` uvnitř `useEffect`, nikdy na úrovni modulu (SSR crash). Komponenta se načítá přes `dynamic(() => import(...), { ssr: false })` z `PubFinderModal`. Mapa se ihned zobrazí na Praze a po přijetí geolokace se přesune na skutečnou polohu. Cleanup: `cancelled = true` + `map.remove()` + `mapRef.current = null`.
+- **`/api/overpass` route** — proxy na `https://overpass-api.de/api/interpreter`. Rate limit 1 req/2s per IP (in-memory Map s evikce nad 10 000 záznamů). Validace souřadnic (isFinite + rozsahy). `Cache-Control: public, max-age=300`. Chybové hlášky česky. `OverpassElement.tags` je volitelné (`tags?`) — API ho může vynechat.
+- **`lib/overpass.ts`** — klientský wrapper, volá `/api/overpass` (ne přímo overpass-api.de). Cache klíčem je bounding box zaokrouhlený na 3 desetinná místa (≈ 111m). TTL 5 minut.
+- **Leaflet DivIcon a emoji** — emoji v DivIcon se nesmí používat (CLAUDE.md: žádné emoji v UI + nekonzistentní rendering). Používej inline SVG string uvnitř `markerHtml()`.
+- **Leaflet popup a XSS** — popup HTML se sestavuje přes `innerHTML`. Vždy escapuj user-provided stringy přes `escHtml()` (`&`, `<`, `>`). Button listener přidávej přes `addEventListener`, ne přes `onclick` atribut v HTML stringu.
 
 ---
 
@@ -463,6 +474,11 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - ✅ Supabase migrace: 001–004 (schema, nullable drink_id, disable RLS, cascade fix)
 - ✅ Kompletní redesign — olivová paleta, lucide-react, zaoblené rohy (ne pills)
 - ✅ Deploy na Vercel (hospoda.pro), GitHub auto-deploy z `main`
+- ✅ Vyhledávání hospod v okolí — `PubFinderMap` + `PubFinderModal` + `lib/overpass.ts` + `/api/overpass`
+  - Leaflet mapa, geolokace (fallback Praha), olivové SVG markery
+  - Výsledky z OpenStreetMap přes Overpass API, 5min cache
+  - Výběr hospody prefilluje formulář „Nová hospoda" v onboardingu
+- ✅ Onboarding `page.tsx` — tlačítko „Najít hospody v okolí" pod search inputem
 
 ## Co zbývá implementovat
 
