@@ -35,6 +35,13 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     loadPubs()
+
+    // Re-fetch při návratu na stránku (bfcache + Next.js router cache)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadPubs()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
   async function loadPubs() {
@@ -88,11 +95,16 @@ export default function OnboardingPage() {
   async function handleDeletePub() {
     if (!deletingPub) return
     setConfirmingDeletePub(true)
-    await supabase.from('pubs').delete().eq('id', deletingPub.id)
-    setPubs((prev) => prev.filter((p) => p.id !== deletingPub.id))
+    const { error } = await supabase.from('pubs').delete().eq('id', deletingPub.id)
     setConfirmingDeletePub(false)
+    if (error) {
+      toast(`Nepodařilo se smazat hospodu: ${error.message}`, 'error')
+      return
+    }
     setDeletingPub(null)
     toast('Hospoda byla smazána.', 'info')
+    await loadPubs()   // re-fetch z DB, ignoruje Next.js router cache
+    router.refresh()   // invaliduje server cache pro future navigace
   }
 
   async function createPub() {
