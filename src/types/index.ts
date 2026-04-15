@@ -93,5 +93,9 @@ export interface MapPub {
   phone?: string
   website?: string
   opening_hours?: string
-  tags?: Record<string, string>
+  tags?: {
+    category?: string
+    datasource?: string
+    [key: string]: string | undefined
+  }
 }
