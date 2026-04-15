@@ -131,19 +131,22 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
         maxZoom: 19,
       }).addTo(map)
 
-      const startAt = (lat: number, lon: number) => {
-        map.setView([lat, lon], INITIAL_ZOOM)
-        fetchAndRender(map)
-      }
+      // Zobraz Prahu ihned — mapa je použitelná okamžitě
+      map.setView(PRAGUE, INITIAL_ZOOM)
+      fetchAndRender(map)
 
+      // Pokud geolokace uspěje, přesuň mapu na skutečnou polohu
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => { if (!cancelled) startAt(pos.coords.latitude, pos.coords.longitude) },
-          () => { if (!cancelled) startAt(PRAGUE[0], PRAGUE[1]) },
+          (pos) => {
+            if (!cancelled) {
+              map.setView([pos.coords.latitude, pos.coords.longitude], INITIAL_ZOOM)
+              fetchAndRender(map)
+            }
+          },
+          () => { /* fallback Praha je už zobrazena */ },
           { timeout: 5000 }
         )
-      } else {
-        if (!cancelled) startAt(PRAGUE[0], PRAGUE[1])
       }
 
       map.on('moveend', () => {
