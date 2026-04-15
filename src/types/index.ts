@@ -32,7 +32,7 @@ export interface DrinkLog {
   id: string
   session_id: string
   session_user_id: string
-  drink_id: string
+  drink_id: string | null
   quantity: number
   unit_price: number
   logged_at: string

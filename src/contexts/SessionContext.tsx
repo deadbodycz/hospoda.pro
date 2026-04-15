@@ -428,7 +428,7 @@ export function SessionProvider({
       const drinkMap = new Map<string, DrinkBreakdownItem>()
       for (const log of userLogs) {
         const drink = state.drinks.find((d) => d.id === log.drink_id)
-        if (!drink) continue
+        if (!drink || !log.drink_id) continue
         const existing = drinkMap.get(log.drink_id)
         if (existing) {
           existing.count += log.quantity

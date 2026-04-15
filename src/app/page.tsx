@@ -3,24 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, MapPin, ChevronRight, Plus, Pencil, CalendarDays, Trash2 } from 'lucide-react'
+import { Search, MapPin, Plus, Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
 import { BottomNav } from '@/components/BottomNav'
 import { useToast } from '@/components/ui/Toast'
 import type { Pub } from '@/types'
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const days = Math.floor(diff / 86_400_000)
-  if (days === 0) return 'Dnes'
-  if (days === 1) return 'Včera'
-  if (days < 7) return `Před ${days} dny`
-  const weeks = Math.floor(days / 7)
-  if (weeks === 1) return 'Minulý týden'
-  return `Před ${weeks} týdny`
-}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -353,22 +342,20 @@ function PubCard({
   onDelete: (e: React.MouseEvent) => void
 }) {
   return (
-    <Link
-      href={`/${pub.id}`}
-      className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform"
-    >
-      <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
-        <MapPin className="w-4 h-4 text-[#a8bc00]" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-on-surface text-sm truncate">{pub.name}</p>
-        {pub.address && <p className="text-xs text-outline truncate">{pub.address}</p>}
-        <div className="flex items-center gap-1 mt-0.5">
-          <CalendarDays className="w-3 h-3 text-outline" />
-          <span className="text-xs font-mono text-outline uppercase tracking-widest">{timeAgo(pub.created_at)}</span>
+    <div className="relative">
+      <Link
+        href={`/${pub.id}`}
+        className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 pr-20 active:scale-[0.99] transition-transform"
+      >
+        <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
+          <MapPin className="w-4 h-4 text-[#a8bc00]" />
         </div>
-      </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="min-w-0">
+          <p className="font-semibold text-on-surface text-sm leading-snug">{pub.name}</p>
+          {pub.address && <p className="text-xs text-outline mt-0.5">{pub.address}</p>}
+        </div>
+      </Link>
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
         <button
           onClick={onEdit}
           className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
@@ -383,9 +370,8 @@ function PubCard({
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
-        <ChevronRight className="w-4 h-4 text-outline" />
       </div>
-    </Link>
+    </div>
   )
 }
 
