@@ -24,7 +24,7 @@ function parseElement(el: OverpassElement): OsmPub | null {
   const lat = el.lat ?? el.center?.lat
   const lon = el.lon ?? el.center?.lon
   const name = el.tags?.name
-  if (!lat || !lon || !name) return null
+  if (lat == null || lon == null || !name) return null
 
   const street = el.tags?.['addr:street']
   const housenumber = el.tags?.['addr:housenumber']
@@ -49,7 +49,7 @@ function parseElement(el: OverpassElement): OsmPub | null {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown'
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown'
   const now = Date.now()
   if ((lastRequestTime.get(ip) ?? 0) + 2_000 > now) {
     return NextResponse.json(
@@ -58,6 +58,11 @@ export async function POST(req: NextRequest) {
     )
   }
   lastRequestTime.set(ip, now)
+  if (lastRequestTime.size > 10_000) {
+    Array.from(lastRequestTime.entries()).forEach(([key, ts]) => {
+      if (ts + 2_000 < now) lastRequestTime.delete(key)
+    })
+  }
 
   let bounds: Bounds
   try {
@@ -70,6 +75,15 @@ export async function POST(req: NextRequest) {
       typeof body.bounds.west !== 'number'
     ) {
       throw new Error('invalid bounds')
+    }
+    const { north, south, east, west } = body.bounds
+    if (
+      !isFinite(north) || !isFinite(south) || !isFinite(east) || !isFinite(west) ||
+      north < -90 || north > 90 || south < -90 || south > 90 ||
+      east < -180 || east > 180 || west < -180 || west > 180 ||
+      south >= north
+    ) {
+      throw new Error('out of range bounds')
     }
     bounds = body.bounds
   } catch {
@@ -88,6 +102,13 @@ export async function POST(req: NextRequest) {
       signal: controller.signal,
     })
     clearTimeout(timer)
+
+    if (res.status === 429) {
+      return NextResponse.json(
+        { error: 'Příliš mnoho požadavků na Overpass. Zkus to za chvíli.' },
+        { status: 503 }
+      )
+    }
 
     if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`)
 
