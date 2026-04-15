@@ -92,7 +92,7 @@ export function PubFinderModal({ open, onClose, onSelect }: Props) {
                 className="w-full flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform text-left"
               >
                 <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-4 h-4 text-primary" />
+                  <MapPin className="w-4 h-4 text-primary" aria-hidden />
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-on-surface text-sm leading-snug">{pub.name}</p>

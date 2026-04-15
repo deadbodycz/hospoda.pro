@@ -1,51 +1,110 @@
 'use client'
 
+// This component is always loaded via dynamic(() => import(...), { ssr: false })
+// so module-level browser-API imports are safe.
 import { useEffect, useRef, useState } from 'react'
-import 'leaflet/dist/leaflet.css'
-import type { OsmPub } from '@/types'
-import { searchPubsNearby, type Bounds } from '@/lib/overpass'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
+import type { OsmPub, Bounds } from '@/types'
+import { getMapStyle } from '@/lib/maptiler-style'
+import { searchPubsNearby } from '@/lib/maptiler-places'
+import { useTheme } from '@/contexts/ThemeContext'
 import { haptic } from '@/lib/haptics'
+
+const PRAGUE: [number, number] = [14.4378, 50.0755] // [lng, lat] — MapLibre convention
+const INITIAL_ZOOM = 14
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? ''
 
 interface Props {
   onSelect: (pub: OsmPub) => void
   onPubsLoaded?: (pubs: OsmPub[]) => void
 }
 
-const PRAGUE: [number, number] = [50.0755, 14.4378]
-const INITIAL_ZOOM = 14
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-function markerHtml(): string {
-  const beerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h1a3 3 0 0 1 0 6h-1"/><path d="M9 12v6"/><path d="M13 12v6"/><path d="M14 7.5c-1 0-1.44.5-3 .5s-2-.5-3-.5-1.44.5-3 .5"/><path d="M3 8v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/><path d="M5 8v0a2 2 0 0 1 4 0"/></svg>`
-  return `<div style="
-    background:#8A9900;
-    color:#fff;
-    border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);
-    width:32px;height:32px;
-    border:2px solid rgba(255,255,255,0.85);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 8px rgba(0,0,0,0.45);
-  "><span style="transform:rotate(45deg);display:flex;align-items:center;justify-content:center">${beerSvg}</span></div>`
-}
-
 type MapStatus = 'idle' | 'loading' | 'empty' | 'error'
+
+// GeoJSON feature properties stored in map source
+interface PubFeatureProps {
+  id: string
+  name: string
+  address: string
+  lat: number
+  lon: number
+}
+
+function pubsToGeoJSON(pubs: OsmPub[]): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: pubs.map((pub) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [pub.lon, pub.lat] },
+      properties: {
+        id: pub.id,
+        name: pub.name,
+        address: pub.address ?? '',
+        lat: pub.lat,
+        lon: pub.lon,
+      } satisfies PubFeatureProps,
+    })),
+  }
+}
+
+function addPubLayers(map: maplibregl.Map) {
+  if (!map.getSource('pubs')) {
+    map.addSource('pubs', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    })
+  }
+
+  if (!map.getLayer('pubs-circle')) {
+    map.addLayer({
+      id: 'pubs-circle',
+      type: 'circle',
+      source: 'pubs',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 6, 16, 12],
+        'circle-color': '#8A9900',
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-opacity': 0.9,
+      },
+    })
+  }
+
+  if (!map.getLayer('pubs-labels')) {
+    map.addLayer({
+      id: 'pubs-labels',
+      type: 'symbol',
+      source: 'pubs',
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-size': 11,
+        'text-offset': [0, 1.2],
+        'text-anchor': 'top',
+        'text-optional': true,
+      },
+      paint: {
+        'text-color': '#f0f0f0',
+        'text-halo-color': '#0d0d0e',
+        'text-halo-width': 1.5,
+      },
+    })
+  }
+}
 
 export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<import('leaflet').Map | null>(null)
-  const markersRef = useRef<import('leaflet').Marker[]>([])
+  const mapRef = useRef<maplibregl.Map | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onSelectRef = useRef(onSelect)
   const onPubsLoadedRef = useRef(onPubsLoaded)
+  const currentPubsRef = useRef<OsmPub[]>([])
   const retryRef = useRef<(() => void) | null>(null)
+  const { theme } = useTheme()
   const [status, setStatus] = useState<MapStatus>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  // Always keep refs current so stale-closure in useEffect callbacks is not an issue
+  // Keep refs current so stale closures don't cause issues
   onSelectRef.current = onSelect
   onPubsLoadedRef.current = onPubsLoaded
 
@@ -54,116 +113,132 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
 
     let cancelled = false
 
-    async function init() {
-      const L = (await import('leaflet')).default
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: getMapStyle(theme as 'dark' | 'light', MAPTILER_KEY),
+      center: PRAGUE,
+      zoom: INITIAL_ZOOM,
+      attributionControl: false,
+    })
 
-      async function fetchAndRender(map: import('leaflet').Map) {
-        const b = map.getBounds()
-        const bounds: Bounds = {
-          north: b.getNorth(),
-          south: b.getSouth(),
-          east: b.getEast(),
-          west: b.getWest(),
-        }
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      'bottom-left'
+    )
 
-        setStatus('loading')
-        try {
-          const pubs = await searchPubsNearby(bounds)
+    mapRef.current = map
 
-          if (cancelled) return
+    async function fetchAndRender() {
+      if (!mapRef.current || cancelled) return
 
-          // Remove old markers only after successful fetch
-          markersRef.current.forEach((m) => m.remove())
-          markersRef.current = []
+      const b = mapRef.current.getBounds()
+      const bounds: Bounds = {
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      }
 
-          onPubsLoadedRef.current?.(pubs)
+      setStatus('loading')
+      try {
+        const pubs = await searchPubsNearby(bounds)
+        if (cancelled) return
 
-          if (pubs.length === 0) {
-            setStatus('empty')
-            return
-          }
+        currentPubsRef.current = pubs
+        onPubsLoadedRef.current?.(pubs)
 
-          pubs.forEach((pub) => {
-            const icon = L.divIcon({
-              html: markerHtml(),
-              className: '',
-              iconSize: [32, 32],
-              iconAnchor: [16, 32],
-              popupAnchor: [0, -38],
-            })
+        const source = mapRef.current?.getSource('pubs') as maplibregl.GeoJSONSource | undefined
+        source?.setData(pubsToGeoJSON(pubs))
 
-            const popupEl = document.createElement('div')
-            popupEl.style.cssText = 'min-width:160px;font-family:sans-serif'
-            popupEl.innerHTML = `
-              <strong style="display:block;margin-bottom:4px;font-size:14px;color:#1a1a1a">${escHtml(pub.name)}</strong>
-              ${pub.address ? `<span style="display:block;font-size:12px;color:#666;margin-bottom:8px">${escHtml(pub.address)}</span>` : ''}
-              <button style="background:#8A9900;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;width:100%">
-                Vybrat tuto hospodu
-              </button>
-            `
-            popupEl.querySelector('button')?.addEventListener('click', () => {
-              haptic(10)
-              onSelectRef.current(pub)
-            })
-
-            const marker = L.marker([pub.lat, pub.lon], { icon })
-            marker.bindPopup(L.popup({ closeButton: false }).setContent(popupEl))
-            marker.addTo(map)
-            markersRef.current.push(marker)
-          })
-
-          setStatus('idle')
-        } catch (e) {
-          if (cancelled) return
+        setStatus(pubs.length === 0 ? 'empty' : 'idle')
+      } catch {
+        if (!cancelled) {
           setStatus('error')
           setErrorMsg('Nepodařilo se načíst hospody. Zkus to znovu.')
         }
       }
+    }
 
-      const map = L.map(containerRef.current!, { zoomControl: true })
-      mapRef.current = map
+    retryRef.current = fetchAndRender
 
-      retryRef.current = () => fetchAndRender(map)
+    map.on('load', () => {
+      if (cancelled) return
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(map)
+      addPubLayers(map)
 
-      // Zobraz Prahu ihned — mapa je použitelná okamžitě
-      map.setView(PRAGUE, INITIAL_ZOOM)
-      fetchAndRender(map)
+      // Click handler on circles
+      map.on('click', 'pubs-circle', (e) => {
+        haptic(10)
+        const features = e.features
+        if (!features || features.length === 0) return
+        const props = features[0].properties as PubFeatureProps
+        const pub: OsmPub = {
+          id: props.id,
+          name: props.name,
+          lat: props.lat,
+          lon: props.lon,
+          address: props.address || undefined,
+        }
+        onSelectRef.current(pub)
+      })
 
-      // Pokud geolokace uspěje, přesuň mapu na skutečnou polohu
+      map.on('mouseenter', 'pubs-circle', () => {
+        map.getCanvas().style.cursor = 'pointer'
+      })
+      map.on('mouseleave', 'pubs-circle', () => {
+        map.getCanvas().style.cursor = ''
+      })
+
+      // Initial fetch
+      fetchAndRender()
+
+      // Geolocation — show Praha immediately, fly to real position when ready
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             if (!cancelled) {
-              map.setView([pos.coords.latitude, pos.coords.longitude], INITIAL_ZOOM)
-              fetchAndRender(map)
+              map.flyTo({
+                center: [pos.coords.longitude, pos.coords.latitude],
+                zoom: INITIAL_ZOOM,
+                duration: 1500,
+              })
             }
           },
-          () => { /* fallback Praha je už zobrazena */ },
+          () => { /* Praha already shown, no action needed */ },
           { timeout: 5000 }
         )
       }
+    })
 
-      map.on('moveend', () => {
-        if (debounceRef.current) clearTimeout(debounceRef.current)
-        debounceRef.current = setTimeout(() => fetchAndRender(map), 300)
-      })
-    }
+    // Re-add layers after style change (e.g. dark/light toggle while modal is open)
+    map.on('style.load', () => {
+      if (cancelled) return
+      addPubLayers(map)
+      // Restore current pubs into the new source
+      const source = map.getSource('pubs') as maplibregl.GeoJSONSource | undefined
+      if (source && currentPubsRef.current.length > 0) {
+        source.setData(pubsToGeoJSON(currentPubsRef.current))
+      }
+    })
 
-    init()
+    map.on('moveend', () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(fetchAndRender, 300)
+    })
 
     return () => {
       cancelled = true
       if (debounceRef.current) clearTimeout(debounceRef.current)
-      mapRef.current?.remove()
+      map.remove()
       mapRef.current = null
     }
-  }, []) // map init runs exactly once
+  }, []) // Map init runs exactly once
+
+  // Update style when theme changes (layers re-added via style.load handler above)
+  useEffect(() => {
+    if (!mapRef.current) return
+    mapRef.current.setStyle(getMapStyle(theme as 'dark' | 'light', MAPTILER_KEY))
+  }, [theme])
 
   return (
     <div className="relative w-full h-full">
@@ -177,10 +252,7 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
       {status === 'error' && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-error-container text-error rounded-xl px-4 py-2 text-sm max-w-[280px] text-center">
           <p>{errorMsg}</p>
-          <button
-            onClick={() => retryRef.current?.()}
-            className="mt-2 text-xs underline"
-          >
+          <button onClick={() => retryRef.current?.()} className="mt-2 text-xs underline">
             Zkusit znovu
           </button>
         </div>

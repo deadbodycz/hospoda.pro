@@ -75,3 +75,23 @@ export interface OverpassElement {
   center?: { lat: number; lon: number }
   tags?: Record<string, string>
 }
+
+/** Bounding box for map queries (used with MapLibre / MapTiler) */
+export interface MapBounds {
+  north: number
+  south: number
+  east: number
+  west: number
+}
+
+/** A pub/bar result with MapLibre-compatible coordinates */
+export interface MapPub {
+  id: string
+  name: string
+  coordinates: [number, number] // [lng, lat] — MapLibre convention
+  address?: string
+  phone?: string
+  website?: string
+  opening_hours?: string
+  tags?: Record<string, string>
+}

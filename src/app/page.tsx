@@ -179,7 +179,7 @@ export default function OnboardingPage() {
           </div>
           <div>
             <p className="font-semibold text-on-surface text-sm">Najít hospody v okolí</p>
-            <p className="text-xs text-outline mt-0.5">Vyhledat na OpenStreetMap</p>
+            <p className="text-xs text-outline mt-0.5">MapLibre + MapTiler / OpenStreetMap</p>
           </div>
         </button>
 
