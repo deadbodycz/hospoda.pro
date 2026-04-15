@@ -13,8 +13,8 @@ function buildQuery(bounds: Bounds): string {
   return (
     `[out:json][timeout:25];\n` +
     `(\n` +
-    `  node["amenity"~"^(bar|pub|biergarten|night_club)$"](${bbox});\n` +
-    `  way["amenity"~"^(bar|pub|biergarten|night_club)$"](${bbox});\n` +
+    `  node["amenity"~"^(bar|pub|biergarten|night_club|restaurant|cafe|fast_food)$"](${bbox});\n` +
+    `  way["amenity"~"^(bar|pub|biergarten|night_club|restaurant|cafe|fast_food)$"](${bbox});\n` +
     `  node["craft"="brewery"](${bbox});\n` +
     `  way["craft"="brewery"](${bbox});\n` +
     `);\n` +

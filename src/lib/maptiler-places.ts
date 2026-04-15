@@ -30,6 +30,8 @@ const CATEGORY_PRIORITY: Record<string, number> = {
   restaurant: 6,
   'catering.cafe': 7,
   cafe: 7,
+  fast_food: 8,
+  'catering.fast_food': 8,
 }
 
 /** Vzdálenost mezi dvěma body v metrech (Haversine) */
