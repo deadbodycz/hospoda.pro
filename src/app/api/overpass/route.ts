@@ -15,6 +15,8 @@ function buildQuery(bounds: Bounds): string {
     `(\n` +
     `  node["amenity"~"^(bar|pub|biergarten|night_club)$"](${bbox});\n` +
     `  way["amenity"~"^(bar|pub|biergarten|night_club)$"](${bbox});\n` +
+    `  node["craft"="brewery"](${bbox});\n` +
+    `  way["craft"="brewery"](${bbox});\n` +
     `);\n` +
     `out center tags;`
   )
