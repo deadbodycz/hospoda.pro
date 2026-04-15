@@ -78,8 +78,9 @@ src/
 │   │   └── Toast.tsx            ← Toast + useToast hook (ToastProvider)
 │   ├── BottomNav.tsx            ← Spodní navigace (pubId prop, aktivní tab)
 │   ├── DrinkChips.tsx           ← Vertikální seznam nápojů pro výběr
+│   ├── ManualPubAddModal.tsx    ← Modal pro ruční vytvoření hospody (Supabase insert, z-[80])
 │   ├── PubFinderMap.tsx         ← MapLibre GL mapa (Client Component, SSR: false), olivové circle markery
-│   ├── PubFinderModal.tsx       ← Full-screen overlay: mapa + seznam hospod z MapTiler/Overpass
+│   ├── PubFinderModal.tsx       ← Full-screen overlay: mapa + seznam hospod + empty state s ManualPubAddModal
 │   ├── ScanModal.tsx            ← Modal s výsledky AI skenování (checkboxy)
 │   ├── ThemeToggle.tsx          ← Tlačítko pro přepínání dark/light módu
 │   └── UserCard.tsx             ← Karta uživatele s +/- counterem
@@ -113,8 +114,11 @@ src/
 - **Next.js router cache** — Client Component `page.tsx` na `/` může být cachovaný. Po každé mutaci dat (create/delete pub) volej `await loadPubs()` + `router.refresh()`, jinak se stará data vrátí po navigaci zpět.
 - **`PubFinderMap.tsx`** — MapLibre GL se importuje na úrovni modulu (`import maplibregl from 'maplibre-gl'`). To je bezpečné, protože komponenta se vždy načítá přes `dynamic(() => import(...), { ssr: false })` z `PubFinderModal` — modul se nikdy nevyhodnocuje na serveru. Mapa se ihned zobrazí na Praze, po geolokaci se flyTo na skutečnou polohu. Cleanup: `cancelled = true` + `map.remove()` + `mapRef.current = null`.
 - **MapLibre style switching** — volání `map.setStyle()` odstraní všechny vlastní zdroje a vrstvy. Proto `PubFinderMap` naslouchá na `map.on('style.load', ...)` a po každém přepnutí stylu znovu zavolá `addPubLayers(map)` + obnoví data z `currentPubsRef`. Nikdy nevolej `setStyle()` bez tohoto handleru.
-- **`lib/maptiler-places.ts`** — primárně volá MapTiler Places API (`api.maptiler.com/geocoding/...`). Pokud `NEXT_PUBLIC_MAPTILER_KEY` není nastavený nebo API vrátí prázdné výsledky, automaticky fallback na `lib/overpass.ts`. Vrací vždy `OsmPub[]`.
+- **`lib/maptiler-places.ts`** — primárně volá MapTiler Places API (`api.maptiler.com/geocoding/...`). Pokud klíč chybí nebo API selže, fallback na Overpass. Rozšířené kategorie: pub, bar, biergarten, restaurant, cafe, nightclub, brewery. Haversine deduplikace (< 20 m = stejné místo), řazení podle priority kategorie. Exportuje `filterPubsByText(pubs, query)` a `debounce<TArgs>()` (bez `any[]`). Vrací `OsmPub[]` — typ kompatibilní s `PubFinderMap` a `page.tsx`.
 - **`lib/maptiler-style.ts`** — `getMapStyle(theme, apiKey)` vrací URL MapTiler pre-built stylu. Dark: `dataviz-dark`, light: `dataviz`. Nepoužívej vlastní style JSON — bez správných glyfů a sprite URL by MapLibre hodil chyby.
+- **`ManualPubAddModal.tsx`** — vlastní overlay (ne `<Modal>`), `z-[80]` — musí být nad `PubFinderModal` (`z-[70]`) a základním `<Modal>` (`z-[60]`). Používej `lib/supabase.ts` singleton, **ne** `createClientComponentClient` z `@supabase/auth-helpers-nextjs` (ten balíček není nainstalován). `useEffect` synchronizuje `prefilledName`/`prefilledAddress` s lokálním stavem při každém otevření — nutné, jinak by stare hodnoty přetrvávaly při znovuotevření.
+- **Z-index hierarchie modalů**: `<Modal>` = `z-[60]`, `PubFinderModal` = `z-[70]`, `ManualPubAddModal` = `z-[80]`. Každý nový modal vrstvený nad jiný musí mít vyšší z-index — **nepoužívej** `<Modal>` jako wrapper pro modaly zobrazené nad `PubFinderModal`.
+- **`PubFinderModal.tsx`** — `mapLoaded` flag (boolean) rozlišuje „mapa se ještě nenahrála" od „mapa se nahrála, ale nic nenašla". Empty state zobrazí CTA „Přidat hospodu ručně" až po prvním dokončeném fetchi.
 - **`/api/overpass` route** — proxy na `https://overpass-api.de/api/interpreter`. Rate limit 1 req/2s per IP (in-memory Map s evikce nad 10 000 záznamů). Validace souřadnic (isFinite + rozsahy). `Cache-Control: public, max-age=300`. Chybové hlášky česky. `OverpassElement.tags` je volitelné (`tags?`) — API ho může vynechat.
 - **`lib/overpass.ts`** — klientský wrapper, volá `/api/overpass` (ne přímo overpass-api.de). Cache klíčem je bounding box zaokrouhlený na 3 desetinná místa (≈ 111m). TTL 5 minut.
 
@@ -453,6 +457,8 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - ❌ Anglické texty v UI — vše česky
 - ❌ Rychlé přidání osob (SUGGESTED_NAMES) — odstraněno, jen tlačítko „Přidat osobu"
 - ❌ `ON DELETE RESTRICT` na `drink_logs.drink_id` — používej `ON DELETE SET NULL` (jinak mazání ceníku selže pokud existují záznamy pití)
+- ❌ `createClientComponentClient` z `@supabase/auth-helpers-nextjs` — balíček není nainstalován, použij singleton `import { supabase } from '@/lib/supabase'`
+- ❌ `<Modal>` jako wrapper pro overlay nad `PubFinderModal` — `<Modal>` má `z-[60]`, bylo by schované. Použij vlastní `div` s vyšším z-indexem (viz z-index hierarchie výše)
 
 ---
 
@@ -484,8 +490,9 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
   - Výběr hospody prefilluje formulář „Nová hospoda" v onboardingu
 - ✅ Onboarding `page.tsx` — tlačítko „Najít hospody v okolí" pod search inputem
 - ✅ `lib/maptiler-style.ts` — helper pro MapTiler style URL (dark/light)
-- ✅ `lib/maptiler-places.ts` — MapTiler Places API wrapper s Overpass fallbackem
-- ✅ Typy `MapBounds` a `MapPub` v `src/types/index.ts`
+- ✅ `lib/maptiler-places.ts` — 7 kategorií, Haversine dedup, priority sort, filterPubsByText, debounce
+- ✅ Typy `MapBounds` a `MapPub` v `src/types/index.ts` (MapPub.tags s category/datasource)
+- ✅ `ManualPubAddModal.tsx` — ruční přidání hospody přímo do Supabase, z-[80], useEffect prefill sync
 
 ## Co zbývá implementovat
 
