@@ -19,6 +19,7 @@ function escHtml(s: string): string {
 }
 
 function markerHtml(): string {
+  const beerSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11h1a3 3 0 0 1 0 6h-1"/><path d="M9 12v6"/><path d="M13 12v6"/><path d="M14 7.5c-1 0-1.44.5-3 .5s-2-.5-3-.5-1.44.5-3 .5"/><path d="M3 8v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8"/><path d="M5 8v0a2 2 0 0 1 4 0"/></svg>`
   return `<div style="
     background:#8A9900;
     color:#fff;
@@ -27,9 +28,8 @@ function markerHtml(): string {
     width:32px;height:32px;
     border:2px solid rgba(255,255,255,0.85);
     display:flex;align-items:center;justify-content:center;
-    font-size:15px;
     box-shadow:0 2px 8px rgba(0,0,0,0.45);
-  "><span style="transform:rotate(45deg);line-height:1">🍺</span></div>`
+  "><span style="transform:rotate(45deg);display:flex;align-items:center;justify-content:center">${beerSvg}</span></div>`
 }
 
 type MapStatus = 'idle' | 'loading' | 'empty' | 'error'
@@ -41,6 +41,7 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onSelectRef = useRef(onSelect)
   const onPubsLoadedRef = useRef(onPubsLoaded)
+  const retryRef = useRef<(() => void) | null>(null)
   const [status, setStatus] = useState<MapStatus>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -51,74 +52,78 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
 
-    async function fetchAndRender(map: import('leaflet').Map) {
-      const L = (await import('leaflet')).default
-      const b = map.getBounds()
-      const bounds: Bounds = {
-        north: b.getNorth(),
-        south: b.getSouth(),
-        east: b.getEast(),
-        west: b.getWest(),
-      }
-
-      setStatus('loading')
-      try {
-        const pubs = await searchPubsNearby(bounds)
-
-        // Remove old markers
-        markersRef.current.forEach((m) => m.remove())
-        markersRef.current = []
-
-        onPubsLoadedRef.current?.(pubs)
-
-        if (pubs.length === 0) {
-          setStatus('empty')
-          return
-        }
-
-        pubs.forEach((pub) => {
-          const icon = L.divIcon({
-            html: markerHtml(),
-            className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -38],
-          })
-
-          const popupEl = document.createElement('div')
-          popupEl.style.cssText = 'min-width:160px;font-family:sans-serif'
-          popupEl.innerHTML = `
-            <strong style="display:block;margin-bottom:4px;font-size:14px;color:#1a1a1a">${escHtml(pub.name)}</strong>
-            ${pub.address ? `<span style="display:block;font-size:12px;color:#666;margin-bottom:8px">${escHtml(pub.address)}</span>` : ''}
-            <button style="background:#8A9900;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;width:100%">
-              Vybrat tuto hospodu
-            </button>
-          `
-          popupEl.querySelector('button')?.addEventListener('click', () => {
-            haptic(10)
-            onSelectRef.current(pub)
-          })
-
-          const marker = L.marker([pub.lat, pub.lon], { icon })
-          marker.bindPopup(L.popup({ closeButton: false }).setContent(popupEl))
-          marker.addTo(map)
-          markersRef.current.push(marker)
-        })
-
-        setStatus('idle')
-      } catch (e) {
-        setStatus('error')
-        setErrorMsg(
-          e instanceof Error ? e.message : 'Nepodařilo se načíst hospody. Zkus to znovu.'
-        )
-      }
-    }
+    let cancelled = false
 
     async function init() {
       const L = (await import('leaflet')).default
 
+      async function fetchAndRender(map: import('leaflet').Map) {
+        const b = map.getBounds()
+        const bounds: Bounds = {
+          north: b.getNorth(),
+          south: b.getSouth(),
+          east: b.getEast(),
+          west: b.getWest(),
+        }
+
+        setStatus('loading')
+        try {
+          const pubs = await searchPubsNearby(bounds)
+
+          if (cancelled) return
+
+          // Remove old markers only after successful fetch
+          markersRef.current.forEach((m) => m.remove())
+          markersRef.current = []
+
+          onPubsLoadedRef.current?.(pubs)
+
+          if (pubs.length === 0) {
+            setStatus('empty')
+            return
+          }
+
+          pubs.forEach((pub) => {
+            const icon = L.divIcon({
+              html: markerHtml(),
+              className: '',
+              iconSize: [32, 32],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -38],
+            })
+
+            const popupEl = document.createElement('div')
+            popupEl.style.cssText = 'min-width:160px;font-family:sans-serif'
+            popupEl.innerHTML = `
+              <strong style="display:block;margin-bottom:4px;font-size:14px;color:#1a1a1a">${escHtml(pub.name)}</strong>
+              ${pub.address ? `<span style="display:block;font-size:12px;color:#666;margin-bottom:8px">${escHtml(pub.address)}</span>` : ''}
+              <button style="background:#8A9900;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;width:100%">
+                Vybrat tuto hospodu
+              </button>
+            `
+            popupEl.querySelector('button')?.addEventListener('click', () => {
+              haptic(10)
+              onSelectRef.current(pub)
+            })
+
+            const marker = L.marker([pub.lat, pub.lon], { icon })
+            marker.bindPopup(L.popup({ closeButton: false }).setContent(popupEl))
+            marker.addTo(map)
+            markersRef.current.push(marker)
+          })
+
+          setStatus('idle')
+        } catch (e) {
+          if (cancelled) return
+          setStatus('error')
+          setErrorMsg('Nepodařilo se načíst hospody. Zkus to znovu.')
+        }
+      }
+
       const map = L.map(containerRef.current!, { zoomControl: true })
       mapRef.current = map
+
+      retryRef.current = () => fetchAndRender(map)
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution:
@@ -133,12 +138,12 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => startAt(pos.coords.latitude, pos.coords.longitude),
-          () => startAt(PRAGUE[0], PRAGUE[1]),
+          (pos) => { if (!cancelled) startAt(pos.coords.latitude, pos.coords.longitude) },
+          () => { if (!cancelled) startAt(PRAGUE[0], PRAGUE[1]) },
           { timeout: 5000 }
         )
       } else {
-        startAt(PRAGUE[0], PRAGUE[1])
+        if (!cancelled) startAt(PRAGUE[0], PRAGUE[1])
       }
 
       map.on('moveend', () => {
@@ -150,6 +155,7 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
     init()
 
     return () => {
+      cancelled = true
       if (debounceRef.current) clearTimeout(debounceRef.current)
       mapRef.current?.remove()
       mapRef.current = null
@@ -166,8 +172,14 @@ export default function PubFinderMap({ onSelect, onPubsLoaded }: Props) {
         </div>
       )}
       {status === 'error' && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-error-container text-error rounded-xl px-4 py-2 text-sm max-w-[280px] text-center pointer-events-none">
-          {errorMsg}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-error-container text-error rounded-xl px-4 py-2 text-sm max-w-[280px] text-center">
+          <p>{errorMsg}</p>
+          <button
+            onClick={() => retryRef.current?.()}
+            className="mt-2 text-xs underline"
+          >
+            Zkusit znovu
+          </button>
         </div>
       )}
       {status === 'empty' && (
