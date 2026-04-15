@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Pencil, Trash2, ScanLine, Save } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, ScanLine, Save, Eraser } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -15,7 +15,7 @@ export default function SettingsPage({
 }: {
   params: { pubId: string }
 }) {
-  const { pub, drinks, loading, updatePub, updateDrink, removeDrink } = useSession()
+  const { pub, drinks, loading, updatePub, updateDrink, removeDrink, clearAllDrinks } = useSession()
   const { toast } = useToast()
 
   // Pub editing
@@ -49,6 +49,18 @@ export default function SettingsPage({
   // Drink delete confirm
   const [deletingDrink, setDeletingDrink] = useState<Drink | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // Clear all drinks
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false)
+  const [clearingAll, setClearingAll] = useState(false)
+
+  async function handleClearAll() {
+    setClearingAll(true)
+    await clearAllDrinks()
+    setClearingAll(false)
+    setShowClearAllConfirm(false)
+    toast('Ceník byl smazán.', 'info')
+  }
 
   function openDrinkEdit(drink: Drink) {
     setDrinkName(drink.name)
@@ -148,13 +160,24 @@ export default function SettingsPage({
         <section className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-mono text-xs uppercase tracking-wider text-outline">Ceník</h3>
-            <Link
-              href={`/${params.pubId}/scan`}
-              className="flex items-center gap-1.5 text-primary text-xs font-bold"
-            >
-              <ScanLine className="w-4 h-4" />
-              Přeskenovat
-            </Link>
+            <div className="flex items-center gap-3">
+              {drinks.length > 0 && (
+                <button
+                  onClick={() => setShowClearAllConfirm(true)}
+                  className="flex items-center gap-1.5 text-error text-xs font-bold"
+                >
+                  <Eraser className="w-4 h-4" />
+                  Smazat vše
+                </button>
+              )}
+              <Link
+                href={`/${params.pubId}/scan`}
+                className="flex items-center gap-1.5 text-primary text-xs font-bold"
+              >
+                <ScanLine className="w-4 h-4" />
+                Přeskenovat
+              </Link>
+            </div>
           </div>
 
           {drinks.length === 0 ? (
@@ -345,6 +368,36 @@ export default function SettingsPage({
               className="flex-1 bg-error-container text-error font-bold py-2.5 rounded-xl active:scale-95 transition-all disabled:opacity-40 text-sm"
             >
               {confirmingDelete ? 'Mažu…' : 'Smazat'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Clear all drinks confirm */}
+      <Modal
+        open={showClearAllConfirm}
+        onClose={() => setShowClearAllConfirm(false)}
+        title="Smazat celý ceník?"
+      >
+        <div className="space-y-4">
+          <p className="text-on-surface-variant text-sm">
+            Opravdu chceš smazat všechny{' '}
+            <span className="font-bold text-on-surface">{drinks.length} nápoje</span>?
+            Tato akce je nevratná. Ceník pak můžeš znovu naskenovat.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowClearAllConfirm(false)}
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
+            >
+              Zrušit
+            </button>
+            <button
+              onClick={handleClearAll}
+              disabled={clearingAll}
+              className="flex-1 bg-error-container text-error font-bold py-2.5 rounded-xl active:scale-95 transition-all disabled:opacity-40 text-sm"
+            >
+              {clearingAll ? 'Mažu…' : 'Smazat vše'}
             </button>
           </div>
         </div>

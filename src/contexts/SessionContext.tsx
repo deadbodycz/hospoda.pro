@@ -36,6 +36,7 @@ type Action =
   | { type: 'ADD_LOG'; payload: DrinkLog }
   | { type: 'REMOVE_LOG'; payload: string }
   | { type: 'CLOSE_SESSION'; payload: string }
+  | { type: 'CLEAR_DRINKS' }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -77,6 +78,8 @@ function reducer(state: State, action: Action): State {
     case 'CLOSE_SESSION':
       if (!state.session) return state
       return { ...state, session: { ...state.session, closed_at: action.payload } }
+    case 'CLEAR_DRINKS':
+      return { ...state, drinks: [] }
     default:
       return state
   }
@@ -109,6 +112,7 @@ interface SessionContextValue extends State {
   ) => Promise<void>
   updateDrink: (id: string, name: string, priceSmall: number | null, priceLarge: number | null) => Promise<void>
   removeDrink: (id: string) => Promise<void>
+  clearAllDrinks: () => Promise<void>
   updatePub: (name: string, address: string | null) => Promise<void>
   incrementDrink: (userId: string, drink: Drink) => Promise<void>
   decrementDrink: (userId: string, drinkId: string) => Promise<void>
@@ -135,6 +139,7 @@ const SessionContext = createContext<SessionContextValue>({
   addDrinks: async () => {},
   updateDrink: async () => {},
   removeDrink: async () => {},
+  clearAllDrinks: async () => {},
   updatePub: async () => {},
   incrementDrink: async () => {},
   decrementDrink: async () => {},
@@ -292,6 +297,12 @@ export function SessionProvider({
     await supabase.from('drinks').delete().eq('id', id)
     dispatch({ type: 'REMOVE_DRINK', payload: id })
   }, [])
+
+  const clearAllDrinks = useCallback(async () => {
+    if (!state.pub) return
+    await supabase.from('drinks').delete().eq('pub_id', state.pub.id)
+    dispatch({ type: 'CLEAR_DRINKS' })
+  }, [state.pub])
 
   const updatePub = useCallback(
     async (name: string, address: string | null) => {
@@ -458,6 +469,7 @@ export function SessionProvider({
         addDrinks,
         updateDrink,
         removeDrink,
+        clearAllDrinks,
         updatePub,
         incrementDrink,
         decrementDrink,

@@ -146,12 +146,11 @@ export default function AccountPage({
                   </div>
                   <div className="space-y-1 pl-11">
                     {breakdown.map(({ drink, count, subtotal }) => (
-                      <div key={drink.id} className="flex justify-between items-center">
-                        <span className="text-xs text-on-surface-variant">
-                          {drink.name}
-                          <span className="text-outline ml-1">×{count}</span>
+                      <div key={drink.id} className="flex items-center gap-2">
+                        <span className="text-xs text-on-surface-variant min-w-0 flex-1 truncate">
+                          {count}× {drink.name}
                         </span>
-                        <span className="text-xs font-mono text-outline tabular-nums">
+                        <span className="text-xs font-mono text-outline tabular-nums whitespace-nowrap flex-shrink-0">
                           {Math.round(subtotal)} Kč
                         </span>
                       </div>

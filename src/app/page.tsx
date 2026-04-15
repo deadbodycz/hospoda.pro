@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, MapPin, ChevronRight, Plus, Pencil, CalendarDays } from 'lucide-react'
+import { Search, MapPin, ChevronRight, Plus, Pencil, CalendarDays, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
@@ -39,6 +39,10 @@ export default function OnboardingPage() {
   const [editName, setEditName] = useState('')
   const [editAddress, setEditAddress] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Delete pub
+  const [deletingPub, setDeletingPub] = useState<Pub | null>(null)
+  const [confirmingDeletePub, setConfirmingDeletePub] = useState(false)
 
   useEffect(() => {
     loadPubs()
@@ -90,6 +94,16 @@ export default function OnboardingPage() {
     )
     setEditingPub(null)
     toast('Hospoda byla uložena.', 'success')
+  }
+
+  async function handleDeletePub() {
+    if (!deletingPub) return
+    setConfirmingDeletePub(true)
+    await supabase.from('pubs').delete().eq('id', deletingPub.id)
+    setPubs((prev) => prev.filter((p) => p.id !== deletingPub.id))
+    setConfirmingDeletePub(false)
+    setDeletingPub(null)
+    toast('Hospoda byla smazána.', 'info')
   }
 
   async function createPub() {
@@ -167,7 +181,12 @@ export default function OnboardingPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {filtered.map((pub) => (
-                <PubCard key={pub.id} pub={pub} onEdit={(e) => openEditPub(pub, e)} />
+                <PubCard
+                  key={pub.id}
+                  pub={pub}
+                  onEdit={(e) => openEditPub(pub, e)}
+                  onDelete={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingPub(pub) }}
+                />
               ))}
             </div>
           )}
@@ -241,6 +260,36 @@ export default function OnboardingPage() {
         </div>
       </Modal>
 
+      {/* Delete pub confirm */}
+      <Modal
+        open={deletingPub !== null}
+        onClose={() => setDeletingPub(null)}
+        title="Smazat hospodu?"
+      >
+        <div className="space-y-4">
+          <p className="text-on-surface-variant text-sm">
+            Opravdu chceš smazat{' '}
+            <span className="font-bold text-on-surface">{deletingPub?.name}</span>?
+            Smaže se i ceník a všechny záznamy pití. Tato akce je nevratná.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setDeletingPub(null)}
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
+            >
+              Zrušit
+            </button>
+            <button
+              onClick={handleDeletePub}
+              disabled={confirmingDeletePub}
+              className="flex-1 bg-error-container text-error font-bold py-2.5 rounded-xl active:scale-95 transition-all disabled:opacity-40 text-sm"
+            >
+              {confirmingDeletePub ? 'Mažu…' : 'Smazat'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* New pub modal */}
       <Modal
         open={showNewPubModal}
@@ -297,37 +346,46 @@ export default function OnboardingPage() {
 function PubCard({
   pub,
   onEdit,
+  onDelete,
 }: {
   pub: Pub
   onEdit: (e: React.MouseEvent) => void
+  onDelete: (e: React.MouseEvent) => void
 }) {
   return (
-    <div className="relative">
-      <Link
-        href={`/${pub.id}`}
-        className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform block"
-      >
-        <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
-          <MapPin className="w-4 h-4 text-[#a8bc00]" />
+    <Link
+      href={`/${pub.id}`}
+      className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform"
+    >
+      <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
+        <MapPin className="w-4 h-4 text-[#a8bc00]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-on-surface text-sm truncate">{pub.name}</p>
+        {pub.address && <p className="text-xs text-outline truncate">{pub.address}</p>}
+        <div className="flex items-center gap-1 mt-0.5">
+          <CalendarDays className="w-3 h-3 text-outline" />
+          <span className="text-xs font-mono text-outline uppercase tracking-widest">{timeAgo(pub.created_at)}</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-on-surface text-sm truncate">{pub.name}</p>
-          {pub.address && <p className="text-xs text-outline truncate">{pub.address}</p>}
-          <div className="flex items-center gap-1 mt-0.5">
-            <CalendarDays className="w-3 h-3 text-outline" />
-            <span className="text-xs font-mono text-outline uppercase tracking-widest">{timeAgo(pub.created_at)}</span>
-          </div>
-        </div>
-        <ChevronRight className="w-4 h-4 text-outline flex-shrink-0" />
-      </Link>
-      <button
-        onClick={onEdit}
-        className="absolute top-2 right-8 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
-        aria-label={`Upravit ${pub.name}`}
-      >
-        <Pencil className="w-3.5 h-3.5" />
-      </button>
-    </div>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={onEdit}
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
+          aria-label={`Upravit ${pub.name}`}
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error/10 transition-colors active:scale-90 text-outline hover:text-error"
+          aria-label={`Smazat ${pub.name}`}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+        <ChevronRight className="w-4 h-4 text-outline" />
+      </div>
+    </Link>
   )
 }
 

@@ -10,11 +10,6 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { getAvatarStyle, getInitials } from '@/lib/colors'
 
-const SUGGESTED_NAMES = [
-  'Honza', 'Petra', 'Martin', 'Katka', 'Tomáš',
-  'Lucie', 'Jakub', 'Tereza', 'Ondřej', 'Anička',
-]
-
 export default function UsersPage({
   params,
 }: {
@@ -46,10 +41,6 @@ export default function UsersPage({
     setEditingUserId(null)
     toast(`Jméno bylo změněno na ${editUserName.trim()}.`, 'success')
   }
-
-  const suggestedFiltered = SUGGESTED_NAMES.filter(
-    (n) => !users.some((u) => u.name.toLowerCase() === n.toLowerCase())
-  )
 
   async function handleAddUser(name: string) {
     if (!name.trim()) return
@@ -116,36 +107,6 @@ export default function UsersPage({
             Přidej kamarády ke stolu a sleduj jejich nápoje.
           </p>
         </section>
-
-        {/* Suggested names */}
-        {suggestedFiltered.length > 0 && (
-          <section className="space-y-4">
-            <h3 className="font-mono text-xs uppercase tracking-wider text-outline">
-              Rychlé přidání
-            </h3>
-            <div className="flex overflow-x-auto gap-4 pb-2">
-              {suggestedFiltered.slice(0, 8).map((name) => {
-                const av = getAvatarStyle(name)
-                return (
-                  <button
-                    key={name}
-                    onClick={() => handleAddUser(name)}
-                    className="flex-none flex flex-col items-center gap-2 active:scale-90 transition-transform"
-                    aria-label={`Přidat ${name}`}
-                  >
-                    <div
-                      className="w-14 h-14 rounded-full border-2 flex items-center justify-center font-bold text-sm"
-                      style={{ backgroundColor: av.bg, color: av.color, borderColor: av.border }}
-                    >
-                      {getInitials(name)}
-                    </div>
-                    <span className="text-[10px] font-mono" style={{ color: av.color }}>{name}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        )}
 
         {/* Add button */}
         <section>
