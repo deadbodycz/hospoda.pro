@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, MapPin, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Search, MapPin, Plus, Pencil, Trash2, Navigation2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
+import { PubFinderModal } from '@/components/PubFinderModal'
+import type { OsmPub } from '@/types'
 import { BottomNav } from '@/components/BottomNav'
 import { useToast } from '@/components/ui/Toast'
 import type { Pub } from '@/types'
@@ -32,6 +34,9 @@ export default function OnboardingPage() {
   // Delete pub
   const [deletingPub, setDeletingPub] = useState<Pub | null>(null)
   const [confirmingDeletePub, setConfirmingDeletePub] = useState(false)
+
+  // Pub finder
+  const [showPubFinderModal, setShowPubFinderModal] = useState(false)
 
   useEffect(() => {
     loadPubs()
@@ -107,6 +112,13 @@ export default function OnboardingPage() {
     router.refresh()   // invaliduje server cache pro future navigace
   }
 
+  function handlePubFinderSelect(pub: OsmPub) {
+    setShowPubFinderModal(false)
+    setNewName(pub.name)
+    setNewAddress(pub.address ?? '')
+    setShowNewPubModal(true)
+  }
+
   async function createPub() {
     if (!newName.trim()) return
     setCreating(true)
@@ -156,6 +168,20 @@ export default function OnboardingPage() {
             />
           </div>
         </div>
+
+        {/* Pub finder button */}
+        <button
+          onClick={() => setShowPubFinderModal(true)}
+          className="w-full flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform text-left -mt-6"
+        >
+          <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
+            <Navigation2 className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-on-surface text-sm">Najít hospody v okolí</p>
+            <p className="text-xs text-outline mt-0.5">Vyhledat na OpenStreetMap</p>
+          </div>
+        </button>
 
         {/* Pub list */}
         <section className="space-y-6">
@@ -290,6 +316,13 @@ export default function OnboardingPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Pub finder modal */}
+      <PubFinderModal
+        open={showPubFinderModal}
+        onClose={() => setShowPubFinderModal(false)}
+        onSelect={handlePubFinderSelect}
+      />
 
       {/* New pub modal */}
       <Modal
