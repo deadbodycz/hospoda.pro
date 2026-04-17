@@ -527,7 +527,13 @@ export function SessionProvider({
       if (!isPro) {
         const session = { ...state.session, closed_at: closedAt }
         LS.set(LS_KEYS.session, session)
+        // Vymaž menu_photo_url z LS pub
+        if (state.pub) {
+          const lsPub = LS.get<typeof state.pub | null>(LS_KEYS.pub, null)
+          if (lsPub) LS.set(LS_KEYS.pub, { ...lsPub, menu_photo_url: null })
+        }
         dispatch({ type: 'CLOSE_SESSION', payload: closedAt })
+        dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
         return
       }
 

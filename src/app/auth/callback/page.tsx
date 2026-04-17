@@ -11,8 +11,12 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const code = searchParams.get('code')
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(() => {
-        router.replace('/')
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          router.replace('/account?error=1')
+        } else {
+          router.replace('/')
+        }
       })
     } else {
       router.replace('/')

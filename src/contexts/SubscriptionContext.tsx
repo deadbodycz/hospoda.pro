@@ -13,8 +13,8 @@ import { supabase } from '@/lib/supabase'
 interface Profile {
   id: string
   stripe_customer_id: string | null
-  subscription_status: string
-  subscription_tier: string
+  subscription_status: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid'
+  subscription_tier: 'free' | 'monthly' | 'yearly'
   subscription_ends_at: string | null
 }
 
@@ -97,7 +97,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     await fetchProfile(user.id)
   }, [user, fetchProfile])
 
-  const isPro = profile?.subscription_status === 'active'
+  const isPro = ['active', 'trialing'].includes(profile?.subscription_status ?? '')
 
   return (
     <SubscriptionContext.Provider

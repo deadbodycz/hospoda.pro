@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { tier } = await req.json() as { tier: 'monthly' | 'yearly' }
-  if (!tier) {
-    return NextResponse.json({ error: 'tier required' }, { status: 400 })
+  if (tier !== 'monthly' && tier !== 'yearly') {
+    return NextResponse.json({ error: 'Neplatný plán. Vyber monthly nebo yearly.' }, { status: 400 })
   }
 
   const priceId = tier === 'yearly'
