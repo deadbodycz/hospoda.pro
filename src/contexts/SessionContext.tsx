@@ -9,6 +9,39 @@ import {
 } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Drink, DrinkLog, Pub, Session, SessionUser } from '@/types'
+import { useSubscription } from '@/contexts/SubscriptionContext'
+
+// ── localStorage helpers ───────────────────────────────────────
+
+const LS = {
+  get<T>(key: string, fallback: T): T {
+    if (typeof window === 'undefined') return fallback
+    try {
+      const raw = localStorage.getItem(key)
+      return raw !== null ? (JSON.parse(raw) as T) : fallback
+    } catch {
+      return fallback
+    }
+  },
+  set(key: string, value: unknown) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(value))
+    }
+  },
+  remove(key: string) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(key)
+    }
+  },
+}
+
+const LS_KEYS = {
+  pub: 'hospoda_pub',
+  drinks: 'hospoda_drinks',
+  session: 'hospoda_session',
+  users: 'hospoda_users',
+  logs: 'hospoda_logs',
+}
 
 // ── State ─────────────────────────────────────────────────────
 
@@ -164,6 +197,7 @@ export function SessionProvider({
   children: React.ReactNode
 }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const { isPro } = useSubscription()
 
   // Load everything on mount
   useEffect(() => {
@@ -172,37 +206,54 @@ export function SessionProvider({
     async function load() {
       dispatch({ type: 'SET_LOADING', payload: true })
 
-      // Fetch pub
+      if (!isPro) {
+        const pub = LS.get<Pub | null>(LS_KEYS.pub, null)
+        const drinks = LS.get<Drink[]>(LS_KEYS.drinks, [])
+        const users = LS.get<SessionUser[]>(LS_KEYS.users, [])
+        const logs = LS.get<DrinkLog[]>(LS_KEYS.logs, [])
+        let session = LS.get<Session | null>(LS_KEYS.session, null)
+
+        if (!pub || pub.id !== pubId) {
+          if (!cancelled) dispatch({ type: 'SET_ERROR', payload: 'Hospoda nenalezena.' })
+          return
+        }
+
+        if (!session) {
+          session = {
+            id: crypto.randomUUID(),
+            pub_id: pubId,
+            created_at: new Date().toISOString(),
+            closed_at: null,
+          }
+          LS.set(LS_KEYS.session, session)
+        }
+
+        if (!cancelled) {
+          dispatch({ type: 'INIT', payload: { pub, session, drinks, users, logs } })
+        }
+        return
+      }
+
+      // Pro mode — Supabase
       const { data: pub, error: pubErr } = await supabase
-        .from('pubs')
-        .select('*')
-        .eq('id', pubId)
-        .single()
+        .from('pubs').select('*').eq('id', pubId).single()
 
       if (pubErr || !pub) {
         if (!cancelled) dispatch({ type: 'SET_ERROR', payload: 'Hospodu se nepodařilo načíst.' })
         return
       }
 
-      // Find or create active session
       let session: Session | null = null
       const { data: existingSession } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('pub_id', pubId)
-        .is('closed_at', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+        .from('sessions').select('*').eq('pub_id', pubId)
+        .is('closed_at', null).order('created_at', { ascending: false })
+        .limit(1).maybeSingle()
 
       if (existingSession) {
         session = existingSession
       } else {
         const { data: newSession, error: sessionErr } = await supabase
-          .from('sessions')
-          .insert({ pub_id: pubId })
-          .select()
-          .single()
+          .from('sessions').insert({ pub_id: pubId }).select().single()
         if (sessionErr || !newSession) {
           if (!cancelled) dispatch({ type: 'SET_ERROR', payload: 'Nepodařilo se vytvořit session.' })
           return
@@ -210,128 +261,99 @@ export function SessionProvider({
         session = newSession
       }
 
-      // Narrow: session is guaranteed non-null here (we either used existing or created new)
       if (!session) {
         if (!cancelled) dispatch({ type: 'SET_ERROR', payload: 'Session nebyla nalezena.' })
         return
       }
 
-      // Fetch drinks
       const { data: drinks } = await supabase
-        .from('drinks')
-        .select('*')
-        .eq('pub_id', pubId)
-        .order('created_at')
-
-      // Fetch users
+        .from('drinks').select('*').eq('pub_id', pubId).order('created_at')
       const { data: users } = await supabase
-        .from('session_users')
-        .select('*')
-        .eq('session_id', session.id)
-        .order('created_at')
-
-      // Fetch logs
+        .from('session_users').select('*').eq('session_id', session.id).order('created_at')
       const { data: logs } = await supabase
-        .from('drink_logs')
-        .select('*')
-        .eq('session_id', session.id)
-        .order('logged_at')
+        .from('drink_logs').select('*').eq('session_id', session.id).order('logged_at')
 
       if (!cancelled) {
         dispatch({
           type: 'INIT',
-          payload: {
-            pub,
-            session,
-            drinks: drinks ?? [],
-            users: users ?? [],
-            logs: logs ?? [],
-          },
+          payload: { pub, session, drinks: drinks ?? [], users: users ?? [], logs: logs ?? [] },
         })
       }
     }
 
     load()
     return () => { cancelled = true }
-  }, [pubId])
+  }, [pubId, isPro])
 
   // ── Actions ────────────────────────────────────────────────
 
   const addUser = useCallback(
     async (name: string) => {
       if (!state.session) return
-      // Store name as avatar_color key — color is derived deterministically from name at render time
-      const avatar_color = name
+      if (!isPro) {
+        const user: SessionUser = {
+          id: crypto.randomUUID(),
+          session_id: state.session.id,
+          name,
+          avatar_color: name,
+        }
+        const users = [...state.users, user]
+        LS.set(LS_KEYS.users, users)
+        dispatch({ type: 'ADD_USER', payload: user })
+        return
+      }
       const { data, error } = await supabase
         .from('session_users')
-        .insert({ session_id: state.session.id, name, avatar_color })
-        .select()
-        .single()
+        .insert({ session_id: state.session.id, name, avatar_color: name })
+        .select().single()
       if (!error && data) dispatch({ type: 'ADD_USER', payload: data })
     },
-    [state.session]
+    [state.session, state.users, isPro]
   )
 
-  const removeUser = useCallback(async (id: string) => {
-    await supabase.from('session_users').delete().eq('id', id)
-    dispatch({ type: 'REMOVE_USER', payload: id })
-  }, [])
-
-  const updateUser = useCallback(async (id: string, name: string) => {
-    await supabase.from('session_users').update({ name }).eq('id', id)
-    dispatch({ type: 'UPDATE_USER', payload: { id, name } })
-  }, [])
-
-  const updateDrink = useCallback(
-    async (id: string, name: string, priceSmall: number | null, priceLarge: number | null) => {
-      const { data, error } = await supabase
-        .from('drinks')
-        .update({ name, price_small: priceSmall, price_large: priceLarge })
-        .eq('id', id)
-        .select()
-        .single()
-      if (!error && data) dispatch({ type: 'UPDATE_DRINK', payload: data })
+  const removeUser = useCallback(
+    async (id: string) => {
+      if (!isPro) {
+        const users = state.users.filter((u) => u.id !== id)
+        LS.set(LS_KEYS.users, users)
+      } else {
+        await supabase.from('session_users').delete().eq('id', id)
+      }
+      dispatch({ type: 'REMOVE_USER', payload: id })
     },
-    []
+    [state.users, isPro]
   )
 
-  const removeDrink = useCallback(async (id: string) => {
-    await supabase.from('drinks').delete().eq('id', id)
-    dispatch({ type: 'REMOVE_DRINK', payload: id })
-  }, [])
-
-  const clearAllDrinks = useCallback(async () => {
-    if (!state.pub) return
-    await supabase.from('drinks').delete().eq('pub_id', state.pub.id)
-    await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
-    await supabase.from('pubs').update({ menu_photo_url: null }).eq('id', state.pub.id)
-    dispatch({ type: 'CLEAR_DRINKS' })
-    dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
-  }, [state.pub])
-
-  const updatePub = useCallback(
-    async (name: string, address: string | null) => {
-      if (!state.pub) return
-      await supabase.from('pubs').update({ name, address }).eq('id', state.pub.id)
-      dispatch({ type: 'UPDATE_PUB', payload: { name, address } })
+  const updateUser = useCallback(
+    async (id: string, name: string) => {
+      if (!isPro) {
+        const users = state.users.map((u) => u.id === id ? { ...u, name } : u)
+        LS.set(LS_KEYS.users, users)
+      } else {
+        await supabase.from('session_users').update({ name }).eq('id', id)
+      }
+      dispatch({ type: 'UPDATE_USER', payload: { id, name } })
     },
-    [state.pub]
+    [state.users, isPro]
   )
-
-  const updateMenuPhoto = useCallback(async (url: string | null) => {
-    if (!state.pub) return
-    const { error } = await supabase
-      .from('pubs').update({ menu_photo_url: url }).eq('id', state.pub.id)
-    if (!error) {
-      dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: url } })
-    }
-  }, [state.pub])
 
   const addDrinks = useCallback(
-    async (
-      items: { name: string; priceSmall: number | null; priceLarge: number | null }[]
-    ) => {
+    async (items: { name: string; priceSmall: number | null; priceLarge: number | null }[]) => {
       if (!state.pub) return
+      if (!isPro) {
+        const newDrinks: Drink[] = items.map((item) => ({
+          id: crypto.randomUUID(),
+          pub_id: state.pub!.id,
+          name: item.name,
+          price_small: item.priceSmall,
+          price_large: item.priceLarge,
+          created_at: new Date().toISOString(),
+        }))
+        const drinks = [...state.drinks, ...newDrinks]
+        LS.set(LS_KEYS.drinks, drinks)
+        dispatch({ type: 'ADD_DRINKS', payload: newDrinks })
+        return
+      }
       const rows = items.map((item) => ({
         pub_id: state.pub!.id,
         name: item.name,
@@ -341,14 +363,109 @@ export function SessionProvider({
       const { data, error } = await supabase.from('drinks').insert(rows).select()
       if (!error && data) dispatch({ type: 'ADD_DRINKS', payload: data })
     },
-    [state.pub]
+    [state.pub, state.drinks, isPro]
+  )
+
+  const updateDrink = useCallback(
+    async (id: string, name: string, priceSmall: number | null, priceLarge: number | null) => {
+      if (!isPro) {
+        const drinks = state.drinks.map((d) =>
+          d.id === id ? { ...d, name, price_small: priceSmall, price_large: priceLarge } : d
+        )
+        LS.set(LS_KEYS.drinks, drinks)
+        const updated = drinks.find((d) => d.id === id)!
+        dispatch({ type: 'UPDATE_DRINK', payload: updated })
+        return
+      }
+      const { data, error } = await supabase
+        .from('drinks')
+        .update({ name, price_small: priceSmall, price_large: priceLarge })
+        .eq('id', id).select().single()
+      if (!error && data) dispatch({ type: 'UPDATE_DRINK', payload: data })
+    },
+    [state.drinks, isPro]
+  )
+
+  const removeDrink = useCallback(
+    async (id: string) => {
+      if (!isPro) {
+        const drinks = state.drinks.filter((d) => d.id !== id)
+        LS.set(LS_KEYS.drinks, drinks)
+      } else {
+        await supabase.from('drinks').delete().eq('id', id)
+      }
+      dispatch({ type: 'REMOVE_DRINK', payload: id })
+    },
+    [state.drinks, isPro]
+  )
+
+  const clearAllDrinks = useCallback(
+    async () => {
+      if (!state.pub) return
+      if (!isPro) {
+        LS.set(LS_KEYS.drinks, [])
+      } else {
+        await supabase.from('drinks').delete().eq('pub_id', state.pub.id)
+        await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
+        await supabase.from('pubs').update({ menu_photo_url: null }).eq('id', state.pub.id)
+      }
+      dispatch({ type: 'CLEAR_DRINKS' })
+      dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
+    },
+    [state.pub, isPro]
+  )
+
+  const updatePub = useCallback(
+    async (name: string, address: string | null) => {
+      if (!state.pub) return
+      if (!isPro) {
+        const pub = { ...state.pub, name, address }
+        LS.set(LS_KEYS.pub, pub)
+      } else {
+        await supabase.from('pubs').update({ name, address }).eq('id', state.pub.id)
+      }
+      dispatch({ type: 'UPDATE_PUB', payload: { name, address } })
+    },
+    [state.pub, isPro]
+  )
+
+  const updateMenuPhoto = useCallback(
+    async (url: string | null) => {
+      if (!state.pub) return
+      if (!isPro) {
+        const pub = { ...state.pub, menu_photo_url: url }
+        LS.set(LS_KEYS.pub, pub)
+        dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: url } })
+        return
+      }
+      const { error } = await supabase
+        .from('pubs').update({ menu_photo_url: url }).eq('id', state.pub.id)
+      if (!error) dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: url } })
+    },
+    [state.pub, isPro]
   )
 
   const incrementDrink = useCallback(
     async (userId: string, drink: Drink) => {
       if (!state.session) return
       const unitPrice = drink.price_large ?? drink.price_small ?? 0
-      // Optimistic
+
+      if (!isPro) {
+        const log: DrinkLog = {
+          id: crypto.randomUUID(),
+          session_id: state.session.id,
+          session_user_id: userId,
+          drink_id: drink.id,
+          quantity: 1,
+          unit_price: unitPrice,
+          logged_at: new Date().toISOString(),
+        }
+        const logs = [...state.logs, log]
+        LS.set(LS_KEYS.logs, logs)
+        dispatch({ type: 'ADD_LOG', payload: log })
+        return
+      }
+
       const tempId = `tmp-${Date.now()}-${Math.random()}`
       const optimistic: DrinkLog = {
         id: tempId,
@@ -363,58 +480,59 @@ export function SessionProvider({
 
       const { data, error } = await supabase
         .from('drink_logs')
-        .insert({
-          session_id: state.session.id,
-          session_user_id: userId,
-          drink_id: drink.id,
-          quantity: 1,
-          unit_price: unitPrice,
-        })
-        .select()
-        .single()
+        .insert({ session_id: state.session.id, session_user_id: userId, drink_id: drink.id, quantity: 1, unit_price: unitPrice })
+        .select().single()
 
       if (error) {
         dispatch({ type: 'REMOVE_LOG', payload: tempId })
       } else if (data) {
-        // Replace temp entry with real one
         dispatch({ type: 'REMOVE_LOG', payload: tempId })
         dispatch({ type: 'ADD_LOG', payload: data })
       }
     },
-    [state.session]
+    [state.session, state.logs, isPro]
   )
 
   const decrementDrink = useCallback(
     async (userId: string, drinkId: string) => {
-      // Find and remove the most recent log for this user+drink
       const lastLog = [...state.logs]
         .filter((l) => l.session_user_id === userId && l.drink_id === drinkId)
-        .sort(
-          (a, b) =>
-            new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
-        )[0]
+        .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())[0]
       if (!lastLog) return
 
+      if (!isPro) {
+        const logs = state.logs.filter((l) => l.id !== lastLog.id)
+        LS.set(LS_KEYS.logs, logs)
+      } else {
+        await supabase.from('drink_logs').delete().eq('id', lastLog.id)
+      }
       dispatch({ type: 'REMOVE_LOG', payload: lastLog.id })
-      await supabase.from('drink_logs').delete().eq('id', lastLog.id)
     },
-    [state.logs]
+    [state.logs, isPro]
   )
 
-  const closeSession = useCallback(async () => {
-    if (!state.session) return
-    const closedAt = new Date().toISOString()
-    await supabase
-      .from('sessions')
-      .update({ closed_at: closedAt })
-      .eq('id', state.session.id)
-    if (state.pub) {
-      await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
-      await supabase.from('pubs').update({ menu_photo_url: null }).eq('id', state.pub.id)
-      dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
-    }
-    dispatch({ type: 'CLOSE_SESSION', payload: closedAt })
-  }, [state.session, state.pub])
+  const closeSession = useCallback(
+    async () => {
+      if (!state.session) return
+      const closedAt = new Date().toISOString()
+
+      if (!isPro) {
+        const session = { ...state.session, closed_at: closedAt }
+        LS.set(LS_KEYS.session, session)
+        dispatch({ type: 'CLOSE_SESSION', payload: closedAt })
+        return
+      }
+
+      await supabase.from('sessions').update({ closed_at: closedAt }).eq('id', state.session.id)
+      if (state.pub) {
+        await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
+        await supabase.from('pubs').update({ menu_photo_url: null }).eq('id', state.pub.id)
+        dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
+      }
+      dispatch({ type: 'CLOSE_SESSION', payload: closedAt })
+    },
+    [state.session, state.pub, isPro]
+  )
 
   // ── Derived ────────────────────────────────────────────────
 
