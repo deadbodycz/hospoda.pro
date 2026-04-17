@@ -180,6 +180,21 @@ export default function SettingsPage({
             </div>
           </div>
 
+          {pub?.menu_photo_url && (
+            <a
+              href={pub.menu_photo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-2 mb-1"
+            >
+              <img
+                src={pub.menu_photo_url}
+                alt="Fotka ceníku"
+                className="w-full rounded-xl object-cover max-h-48"
+              />
+            </a>
+          )}
+
           {drinks.length === 0 ? (
             <p className="text-on-surface-variant text-sm text-center py-6">
               Žádné nápoje. Naskenuj ceník!
