@@ -12,10 +12,13 @@ import type { OsmPub } from '@/types'
 import { BottomNav } from '@/components/BottomNav'
 import { useToast } from '@/components/ui/Toast'
 import type { Pub } from '@/types'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 
 export default function OnboardingPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { isPro, loading: authLoading } = useSubscription()
+  const [localPubName, setLocalPubName] = useState('')
 
   const [pubs, setPubs] = useState<Pub[]>([])
   const [query, setQuery] = useState('')
@@ -39,6 +42,7 @@ export default function OnboardingPage() {
   const [showPubFinderModal, setShowPubFinderModal] = useState(false)
 
   useEffect(() => {
+    if (!isPro) return
     loadPubs()
 
     // Re-fetch při návratu na stránku (bfcache + Next.js router cache)
@@ -47,7 +51,7 @@ export default function OnboardingPage() {
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [])
+  }, [isPro])
 
   async function loadPubs() {
     setLoading(true)
@@ -140,6 +144,25 @@ export default function OnboardingPage() {
     router.push(`/${data.id}`)
   }
 
+  function handleStartFree() {
+    const trimmed = localPubName.trim()
+    if (!trimmed) return
+    const pubId = crypto.randomUUID()
+    const pub = {
+      id: pubId,
+      name: trimmed,
+      address: null,
+      menu_photo_url: null,
+      created_at: new Date().toISOString(),
+    }
+    localStorage.setItem('hospoda_pub', JSON.stringify(pub))
+    localStorage.removeItem('hospoda_session')
+    localStorage.removeItem('hospoda_users')
+    localStorage.removeItem('hospoda_logs')
+    localStorage.removeItem('hospoda_drinks')
+    router.push(`/${pubId}`)
+  }
+
   return (
     <div className="min-h-[100dvh] bg-background text-on-background pb-24">
       {/* Header */}
@@ -154,88 +177,135 @@ export default function OnboardingPage() {
         className="pt-20 px-6 max-w-2xl mx-auto space-y-10"
         style={{ paddingTop: 'calc(3rem + env(safe-area-inset-top) + 2rem)' }}
       >
-        {/* Search */}
-        <div className="relative">
-          <label className="block font-mono text-xs uppercase tracking-widest text-outline mb-2 ml-1">
-            Najdi svou hospodu
-          </label>
-          <div className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 mx-0">
-            <Search className="w-4 h-4 text-outline flex-shrink-0" />
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Hledej…"
-              className="flex-1 bg-transparent text-on-surface focus:outline-none placeholder:text-outline/50 text-base"
-            />
+        {authLoading ? (
+          /* Auth loading skeleton */
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-surface-container rounded-2xl animate-pulse" />
+            ))}
           </div>
-        </div>
-
-        {/* Pub finder button */}
-        <button
-          onClick={() => setShowPubFinderModal(true)}
-          className="w-full flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform text-left -mt-6"
-        >
-          <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
-            <Navigation2 className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold text-on-surface text-sm">Najít hospody v okolí</p>
-            <p className="text-xs text-outline mt-0.5">MapLibre + MapTiler / OpenStreetMap</p>
-          </div>
-        </button>
-
-        {/* Pub list */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-xl tracking-tight text-on-surface">
-              {query ? 'Výsledky' : 'Nedávné hospody'}
-            </h2>
-            <span className="font-mono text-xs text-outline uppercase tracking-tighter">
-              {filtered.length} hospod
-            </span>
-          </div>
-
-          {loading ? (
-            <div className="space-y-4">
-              {[0, 1].map((i) => (
-                <div
-                  key={i}
-                  className="bg-surface-container-low rounded-3xl p-6 border-2 border-transparent animate-pulse h-28"
-                />
-              ))}
+        ) : !isPro ? (
+          /* Free user flow */
+          <div className="space-y-4">
+            <div className="bg-surface-container rounded-2xl p-4 space-y-3">
+              <p className="text-sm text-on-surface-variant">
+                Zadej název hospody a začni počítat. Data se ukládají jen lokálně na toto zařízení.
+              </p>
+              <input
+                type="text"
+                placeholder="Název hospody…"
+                value={localPubName}
+                onChange={(e) => setLocalPubName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleStartFree()}
+                className="w-full bg-background border border-outline-variant rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary"
+              />
+              <button
+                onClick={handleStartFree}
+                disabled={!localPubName.trim()}
+                className="w-full bg-primary text-on-primary rounded-xl py-3 font-medium disabled:opacity-40 active:scale-95 transition-transform"
+              >
+                Začít počítat
+              </button>
             </div>
-          ) : filtered.length === 0 ? (
-            <EmptyState onAdd={() => setShowNewPubModal(true)} />
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {filtered.map((pub) => (
-                <PubCard
-                  key={pub.id}
-                  pub={pub}
-                  onEdit={(e) => openEditPub(pub, e)}
-                  onDelete={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingPub(pub) }}
-                />
-              ))}
+            <div className="text-center">
+              <p className="text-xs text-on-surface-variant mb-2">Chceš ukládání do cloudu, historii a AI skenování?</p>
+              <Link
+                href="/pricing"
+                className="text-primary text-sm font-medium underline underline-offset-2"
+              >
+                Vyzkoušet PRO
+              </Link>
             </div>
-          )}
-        </section>
+          </div>
+        ) : (
+          /* Pro user flow — původní obsah */
+          <>
+            {/* Search */}
+            <div className="relative">
+              <label className="block font-mono text-xs uppercase tracking-widest text-outline mb-2 ml-1">
+                Najdi svou hospodu
+              </label>
+              <div className="flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 mx-0">
+                <Search className="w-4 h-4 text-outline flex-shrink-0" />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Hledej…"
+                  className="flex-1 bg-transparent text-on-surface focus:outline-none placeholder:text-outline/50 text-base"
+                />
+              </div>
+            </div>
 
-        <div className="pt-12 flex justify-center">
-          <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary-container to-transparent opacity-20 rounded-full" />
-        </div>
+            {/* Pub finder button */}
+            <button
+              onClick={() => setShowPubFinderModal(true)}
+              className="w-full flex items-center gap-3 bg-surface border border-outline-variant rounded-xl px-4 py-3 active:scale-[0.99] transition-transform text-left -mt-6"
+            >
+              <div className="w-8 h-8 rounded-lg bg-primary/12 border border-primary/25 flex items-center justify-center flex-shrink-0">
+                <Navigation2 className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-on-surface text-sm">Najít hospody v okolí</p>
+                <p className="text-xs text-outline mt-0.5">MapLibre + MapTiler / OpenStreetMap</p>
+              </div>
+            </button>
+
+            {/* Pub list */}
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-xl tracking-tight text-on-surface">
+                  {query ? 'Výsledky' : 'Nedávné hospody'}
+                </h2>
+                <span className="font-mono text-xs text-outline uppercase tracking-tighter">
+                  {filtered.length} hospod
+                </span>
+              </div>
+
+              {loading ? (
+                <div className="space-y-4">
+                  {[0, 1].map((i) => (
+                    <div
+                      key={i}
+                      className="bg-surface-container-low rounded-3xl p-6 border-2 border-transparent animate-pulse h-28"
+                    />
+                  ))}
+                </div>
+              ) : filtered.length === 0 ? (
+                <EmptyState onAdd={() => setShowNewPubModal(true)} />
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {filtered.map((pub) => (
+                    <PubCard
+                      key={pub.id}
+                      pub={pub}
+                      onEdit={(e) => openEditPub(pub, e)}
+                      onDelete={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingPub(pub) }}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <div className="pt-12 flex justify-center">
+              <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary-container to-transparent opacity-20 rounded-full" />
+            </div>
+          </>
+        )}
       </main>
 
-      {/* FAB */}
-      <button
-        onClick={() => setShowNewPubModal(true)}
-        className="fixed bottom-6 right-4 flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-3 rounded-xl accent-shadow active:translate-y-0.5 transition-all text-sm z-40"
-        style={{ bottom: 'max(env(safe-area-inset-bottom) + 16px, 24px)' }}
-        aria-label="Přidat novou hospodu"
-      >
-        <Plus className="w-4 h-4" />
-        Přidat hospodu
-      </button>
+      {/* FAB — pouze pro Pro uživatele */}
+      {isPro && !authLoading && (
+        <button
+          onClick={() => setShowNewPubModal(true)}
+          className="fixed bottom-6 right-4 flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-3 rounded-xl accent-shadow active:translate-y-0.5 transition-all text-sm z-40"
+          style={{ bottom: 'max(env(safe-area-inset-bottom) + 16px, 24px)' }}
+          aria-label="Přidat novou hospodu"
+        >
+          <Plus className="w-4 h-4" />
+          Přidat hospodu
+        </button>
+      )}
 
       <BottomNav />
 
