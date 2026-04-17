@@ -165,7 +165,7 @@ export default function OnboardingPage() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Hledej hospody nebo města…"
+              placeholder="Hledej…"
               className="flex-1 bg-transparent text-on-surface focus:outline-none placeholder:text-outline/50 text-base"
             />
           </div>
