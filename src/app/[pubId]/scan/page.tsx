@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, ImagePlus, ScanLine, Loader2, X } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
+import { supabase } from '@/lib/supabase'
 import { ScanModal } from '@/components/ScanModal'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -46,7 +47,7 @@ async function compressImage(file: File): Promise<{ base64: string; mediaType: '
 }
 
 export default function ScanPage({ params }: { params: { pubId: string } }) {
-  const { addDrinks } = useSession()
+  const { addDrinks, updateMenuPhoto } = useSession()
   const router = useRouter()
   const { toast } = useToast()
 
@@ -78,6 +79,27 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
         setPageState('error')
         return
       }
+      // Upload fotky do Storage (tiché selhání — sken pokračuje i bez fotky)
+      try {
+        const byteChars = atob(base64)
+        const byteArr = new Uint8Array(byteChars.length)
+        for (let i = 0; i < byteChars.length; i++) {
+          byteArr[i] = byteChars.charCodeAt(i)
+        }
+        const blob = new Blob([byteArr], { type: 'image/jpeg' })
+        const { error: uploadError } = await supabase.storage
+          .from('menu-photos')
+          .upload(`${params.pubId}.jpg`, blob, { upsert: true, contentType: 'image/jpeg' })
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('menu-photos')
+            .getPublicUrl(`${params.pubId}.jpg`)
+          await updateMenuPhoto(publicUrl)
+        }
+      } catch {
+        // tiché selhání — fotka se neuloží, ale sken pokračuje normálně
+      }
+
       setScannedItems(items)
       setPageState('results')
     } catch (err) {
