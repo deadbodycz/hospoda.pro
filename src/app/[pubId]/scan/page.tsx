@@ -81,6 +81,7 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
       }
       // Upload fotky do Storage (tiché selhání — sken pokračuje i bez fotky)
       try {
+        // Použijeme komprimovanou verzi (výstup compressImage), ne originální soubor
         const byteChars = atob(base64)
         const byteArr = new Uint8Array(byteChars.length)
         for (let i = 0; i < byteChars.length; i++) {
@@ -91,10 +92,8 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
           .from('menu-photos')
           .upload(`${params.pubId}.jpg`, blob, { upsert: true, contentType: 'image/jpeg' })
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('menu-photos')
-            .getPublicUrl(`${params.pubId}.jpg`)
-          await updateMenuPhoto(publicUrl)
+          const { data } = supabase.storage.from('menu-photos').getPublicUrl(`${params.pubId}.jpg`)
+          await updateMenuPhoto(data.publicUrl)
         }
       } catch {
         // tiché selhání — fotka se neuloží, ale sken pokračuje normálně
