@@ -8,7 +8,23 @@ const adminSupabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+async function verifyProUser(req: Request): Promise<boolean> {
+  const auth = req.headers.get('authorization')
+  if (!auth?.startsWith('Bearer ')) return false
+  const token = auth.slice(7)
+  const { data: { user } } = await adminSupabase.auth.getUser(token)
+  if (!user) return false
+  const { data: profile } = await adminSupabase
+    .from('profiles').select('subscription_status').eq('id', user.id).single()
+  return profile?.subscription_status === 'active'
+}
+
 export async function POST(req: NextRequest) {
+  const isPro = await verifyProUser(req)
+  if (!isPro) {
+    return NextResponse.json({ error: 'Vyžaduje PRO předplatné' }, { status: 403 })
+  }
+
   try {
     const { base64, pubId } = await req.json() as { base64: string; pubId: string }
 

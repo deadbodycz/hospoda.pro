@@ -10,6 +10,7 @@ import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useToast } from '@/components/ui/Toast'
 import { ProGate } from '@/components/ProGate'
+import { supabase } from '@/lib/supabase'
 import type { ScannedItem } from '@/types'
 
 type PageState = 'idle' | 'processing' | 'results' | 'error'
@@ -63,11 +64,16 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
     try {
       const { base64, mediaType } = await compressImage(file)
 
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const authHeader: Record<string, string> = authSession?.access_token
+        ? { 'Authorization': `Bearer ${authSession.access_token}` }
+        : {}
+
       const formData = new FormData()
       formData.append('base64', base64)
       formData.append('mediaType', mediaType)
 
-      const res = await fetch('/api/scan', { method: 'POST', body: formData })
+      const res = await fetch('/api/scan', { method: 'POST', body: formData, headers: authHeader })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
@@ -83,7 +89,7 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
       try {
         const uploadRes = await fetch('/api/upload-menu-photo', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeader },
           body: JSON.stringify({ base64, pubId: params.pubId }),
         })
         if (uploadRes.ok) {

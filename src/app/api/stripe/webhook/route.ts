@@ -43,7 +43,9 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as Stripe.Subscription
       const status = sub.status === 'active' ? 'active' : sub.status
       const tier = sub.items.data[0]?.price.id === process.env.STRIPE_YEARLY_PRICE_ID ? 'yearly' : 'monthly'
-      const endsAt = new Date(sub.current_period_end * 1000).toISOString()
+      // V Stripe v22 je current_period_end na SubscriptionItem, ne na Subscription
+      const periodEnd = sub.items.data[0]?.current_period_end
+      const endsAt = periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null
       await updateProfile(sub.customer as string, status, tier, endsAt)
       break
     }
