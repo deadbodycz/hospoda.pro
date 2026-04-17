@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const supabaseHostname = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co').hostname
+
 const nextConfig = {
   // Enable standalone output for Docker / Vercel edge
   output: 'standalone',
@@ -6,7 +8,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lvuenmvrcfogyqnixzyw.supabase.co',
+        hostname: supabaseHostname,
         pathname: '/storage/v1/object/public/**',
       },
     ],

@@ -100,6 +100,8 @@ export default function OnboardingPage() {
   async function handleDeletePub() {
     if (!deletingPub) return
     setConfirmingDeletePub(true)
+    // Smazat foto ceníku ze Storage (tiché selhání — soubor nemusí existovat)
+    await supabase.storage.from('menu-photos').remove([`${deletingPub.id}.jpg`]).catch(() => {})
     const { error } = await supabase.from('pubs').delete().eq('id', deletingPub.id)
     setConfirmingDeletePub(false)
     if (error) {

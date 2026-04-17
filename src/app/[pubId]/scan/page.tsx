@@ -93,7 +93,8 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
           .upload(`${params.pubId}.jpg`, blob, { upsert: true, contentType: 'image/jpeg' })
         if (!uploadError) {
           const { data } = supabase.storage.from('menu-photos').getPublicUrl(`${params.pubId}.jpg`)
-          await updateMenuPhoto(data.publicUrl)
+          const url = `${data.publicUrl}?t=${Date.now()}`
+          await updateMenuPhoto(url)
         }
       } catch {
         // tiché selhání — fotka se neuloží, ale sken pokračuje normálně
