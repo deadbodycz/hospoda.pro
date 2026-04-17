@@ -320,8 +320,11 @@ export function SessionProvider({
 
   const updateMenuPhoto = useCallback(async (url: string | null) => {
     if (!state.pub) return
-    await supabase.from('pubs').update({ menu_photo_url: url }).eq('id', state.pub.id)
-    dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: url } })
+    const { error } = await supabase
+      .from('pubs').update({ menu_photo_url: url }).eq('id', state.pub.id)
+    if (!error) {
+      dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: url } })
+    }
   }, [state.pub])
 
   const addDrinks = useCallback(
