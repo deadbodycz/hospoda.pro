@@ -3,6 +3,8 @@ import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
+const ALLOWED_STATUSES = new Set(['free', 'active', 'trialing', 'past_due', 'canceled', 'unpaid'])
+
 export const runtime = 'nodejs'
 
 const supabaseAdmin = createClient(
@@ -28,20 +30,27 @@ export async function POST(req: NextRequest) {
   async function updateProfile(customerId: string, status: string, tier: string, endsAt: string | null) {
     const { data: profile } = await supabaseAdmin
       .from('profiles').select('id').eq('stripe_customer_id', customerId).single()
-    if (!profile) return
-    await supabaseAdmin.from('profiles').update({
+    if (!profile) {
+      console.error(`[webhook] Profile not found for customer: ${customerId}`)
+      return
+    }
+    const { error } = await supabaseAdmin.from('profiles').update({
       subscription_status: status,
       subscription_tier: tier,
       subscription_ends_at: endsAt,
       updated_at: new Date().toISOString(),
     }).eq('id', profile.id)
+    if (error) {
+      console.error(`[webhook] Failed to update profile ${profile.id}:`, error.message)
+    }
   }
 
   switch (event.type) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const sub = event.data.object as Stripe.Subscription
-      const status = sub.status === 'active' ? 'active' : sub.status
+      const rawStatus = sub.status as string
+      const status = ALLOWED_STATUSES.has(rawStatus) ? rawStatus : 'past_due'
       const tier = sub.items.data[0]?.price.id === process.env.STRIPE_YEARLY_PRICE_ID ? 'yearly' : 'monthly'
       // V Stripe v22 je current_period_end na SubscriptionItem, ne na Subscription
       const periodEnd = sub.items.data[0]?.current_period_end

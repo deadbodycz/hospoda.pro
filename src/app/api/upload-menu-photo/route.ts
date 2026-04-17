@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyProUser } from '@/lib/verifyProUser'
 
 // Admin client — service role key bypasses Storage RLS
 // sb_publishable_ klíč nefunguje se Storage API (není JWT formát)
@@ -7,17 +8,6 @@ const adminSupabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-async function verifyProUser(req: Request): Promise<boolean> {
-  const auth = req.headers.get('authorization')
-  if (!auth?.startsWith('Bearer ')) return false
-  const token = auth.slice(7)
-  const { data: { user } } = await adminSupabase.auth.getUser(token)
-  if (!user) return false
-  const { data: profile } = await adminSupabase
-    .from('profiles').select('subscription_status').eq('id', user.id).single()
-  return profile?.subscription_status === 'active'
-}
 
 export async function POST(req: NextRequest) {
   const isPro = await verifyProUser(req)

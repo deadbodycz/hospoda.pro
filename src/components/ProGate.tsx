@@ -23,7 +23,11 @@ export function ProGate({
   const router = useRouter()
   const [dismissed, setDismissed] = useState(false)
 
-  if (loading) return null
+  if (loading) return (
+    <div className="min-h-[100dvh] bg-background flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
   if (isPro) return <>{children}</>
   if (dismissed) return null
 

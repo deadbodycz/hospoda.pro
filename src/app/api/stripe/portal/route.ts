@@ -26,10 +26,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
   }
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
-    return_url: `${req.nextUrl.origin}/account`,
-  })
-
-  return NextResponse.json({ url: portalSession.url })
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: `${req.nextUrl.origin}/account`,
+    })
+    return NextResponse.json({ url: portalSession.url })
+  } catch (err) {
+    console.error('[portal] Stripe error:', err)
+    return NextResponse.json({ error: 'Platební brána není dostupná.' }, { status: 502 })
+  }
 }

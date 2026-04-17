@@ -1,25 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractTextFromImage } from '@/lib/googleVision'
 import { parseMenuText } from '@/lib/anthropic'
-import { createClient } from '@supabase/supabase-js'
+import { verifyProUser } from '@/lib/verifyProUser'
 
 export const maxDuration = 60 // sekund — potřebujeme Vision + Claude
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function verifyProUser(req: Request): Promise<boolean> {
-  const auth = req.headers.get('authorization')
-  if (!auth?.startsWith('Bearer ')) return false
-  const token = auth.slice(7)
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-  if (!user) return false
-  const { data: profile } = await supabaseAdmin
-    .from('profiles').select('subscription_status').eq('id', user.id).single()
-  return profile?.subscription_status === 'active'
-}
 
 export async function POST(req: NextRequest) {
   const isPro = await verifyProUser(req)
