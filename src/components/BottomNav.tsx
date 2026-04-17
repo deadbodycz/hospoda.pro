@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
-import { Layers, Users, Receipt, Settings, MapPin } from 'lucide-react'
+import { useSubscription } from '@/contexts/SubscriptionContext'
+import { Layers, Users, Receipt, Settings, MapPin, User } from 'lucide-react'
 
 interface BottomNavProps {
   pubId?: string
@@ -12,6 +13,7 @@ interface BottomNavProps {
 export function BottomNav({ pubId }: BottomNavProps) {
   const pathname = usePathname()
   const { toast } = useToast()
+  const { isPro } = useSubscription()
 
   const tabs = pubId
     ? [
@@ -21,10 +23,11 @@ export function BottomNav({ pubId }: BottomNavProps) {
         { icon: Settings, label: 'Nastavení',   href: `/${pubId}/settings`, exact: false },
       ]
     : [
-        { icon: MapPin,   label: 'Hospody',     href: '/',                  exact: true  },
-        { icon: Users,    label: 'Lidé',        href: null,                 exact: false },
-        { icon: Receipt,  label: 'Účet',        href: null,                 exact: false },
-        { icon: Settings, label: 'Nastavení',   href: null,                 exact: false },
+        { icon: MapPin,   label: 'Hospody',     href: '/',                             exact: true  },
+        { icon: Users,    label: 'Lidé',        href: null,                            exact: false },
+        { icon: Receipt,  label: 'Účet',        href: null,                            exact: false },
+        { icon: Settings, label: 'Nastavení',   href: null,                            exact: false },
+        { icon: User,     label: 'Profil',      href: isPro ? '/account' : '/pricing', exact: false },
       ]
 
   const isActive = (href: string | null, exact: boolean) => {
