@@ -2,6 +2,7 @@ export interface Pub {
   id: string
   name: string
   address: string | null
+  menu_photo_url: string | null
   created_at: string
 }
 
