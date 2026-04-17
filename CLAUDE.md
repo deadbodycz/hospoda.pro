@@ -70,8 +70,9 @@ src/
 │   │   ├── scan/page.tsx        ← Skenování ceníku
 │   │   └── users/page.tsx       ← Přidání a editace uživatelů ke stolu
 │   └── api/
-│       ├── scan/route.ts        ← API route pro Anthropic vision
-│       └── overpass/route.ts    ← Proxy na Overpass API (rate limit, cache)
+│       ├── scan/route.ts               ← API route pro Anthropic vision
+│       ├── upload-menu-photo/route.ts  ← Server-side upload fotky do Supabase Storage (service role key)
+│       └── overpass/route.ts           ← Proxy na Overpass API (rate limit, cache)
 ├── components/
 │   ├── ui/
 │   │   ├── Modal.tsx            ← Základní modal (backdrop, drag-to-close)
@@ -102,8 +103,10 @@ src/
 
 ### Klíčové implementační detaily:
 
-- **SessionContext** (`contexts/SessionContext.tsx`) — centrální state celé pub session. Používá `useReducer` s explicitními akcemi. Obsahuje optimistické aktualizace pro `incrementDrink` (temp ID → nahrazení reálným po DB response). Exponuje: `addUser`, `removeUser`, `updateUser`, `addDrinks`, `updateDrink`, `removeDrink`, `clearAllDrinks`, `updatePub`, `incrementDrink`, `decrementDrink`, `closeSession`, `drinkCount`, `userTotal`, `userDrinkBreakdown`, `sessionTotal`, `sessionDrinkCount`, `lastDrink`. Exportuje typ `DrinkBreakdownItem { drink, count, subtotal }`.
-- **`clearAllDrinks`** — smaže všechny nápoje daného pubu z DB (`DELETE FROM drinks WHERE pub_id = ...`). Funguje díky `ON DELETE SET NULL` na `drink_logs.drink_id` — záznamy pití zůstanou (účet je přesný), jen ztratí odkaz na konkrétní nápoj.
+- **SessionContext** (`contexts/SessionContext.tsx`) — centrální state celé pub session. Používá `useReducer` s explicitními akcemi. Obsahuje optimistické aktualizace pro `incrementDrink` (temp ID → nahrazení reálným po DB response). Exponuje: `addUser`, `removeUser`, `updateUser`, `addDrinks`, `updateDrink`, `removeDrink`, `clearAllDrinks`, `updatePub`, `updateMenuPhoto`, `incrementDrink`, `decrementDrink`, `closeSession`, `drinkCount`, `userTotal`, `userDrinkBreakdown`, `sessionTotal`, `sessionDrinkCount`, `lastDrink`. Exportuje typ `DrinkBreakdownItem { drink, count, subtotal }`.
+- **`clearAllDrinks`** — smaže všechny nápoje daného pubu z DB (`DELETE FROM drinks WHERE pub_id = ...`) + smaže fotku ceníku ze Storage + nulluje `menu_photo_url` v DB. Funguje díky `ON DELETE SET NULL` na `drink_logs.drink_id` — záznamy pití zůstanou (účet je přesný), jen ztratí odkaz na konkrétní nápoj.
+- **`updateMenuPhoto(url)`** — uloží URL fotky ceníku do `pubs.menu_photo_url` v DB a do state. Dispatchuje `UPDATE_PUB` pouze pokud DB update proběhl bez chyby.
+- **`closeSession`** — při uzavření session také smaže fotku ceníku ze Storage a nulluje `menu_photo_url`. Závisí na `[state.session, state.pub]`.
 - **`DrinkLog.drink_id`** je `string | null` — po smazání nápoje se nastaví na null. `userDrinkBreakdown` tyto záznamy přeskočí (`if (!drink || !log.drink_id) continue`), ale `userTotal` a `sessionTotal` je stále zahrnují (pracují jen s `unit_price`).
 - **`[pubId]/layout.tsx`** — Server Component wrapper, který obaluje celou pub sekci do `<SessionProvider pubId={params.pubId}>`.
 - **Soubory komponent** jsou PascalCase (např. `UserCard.tsx`, `BottomNav.tsx`), ne kebab-case.
@@ -121,6 +124,10 @@ src/
 - **`PubFinderModal.tsx`** — `mapLoaded` flag (boolean) rozlišuje „mapa se ještě nenahrála" od „mapa se nahrála, ale nic nenašla". Empty state zobrazí CTA „Přidat hospodu ručně" až po prvním dokončeném fetchi.
 - **`/api/overpass` route** — proxy na `https://overpass-api.de/api/interpreter`. Rate limit 1 req/2s per IP (in-memory Map s evikce nad 10 000 záznamů). Validace souřadnic (isFinite + rozsahy). `Cache-Control: public, max-age=300`. Chybové hlášky česky. `OverpassElement.tags` je volitelné (`tags?`) — API ho může vynechat. Query hledá: `amenity~"^(bar|pub|biergarten|night_club|restaurant|cafe|fast_food)$"` + `craft=brewery` (pro node i way).
 - **`lib/overpass.ts`** — klientský wrapper, volá `/api/overpass` (ne přímo overpass-api.de). Cache klíčem je bounding box zaokrouhlený na 3 desetinná místa (≈ 111m). TTL 5 minut.
+- **`/api/upload-menu-photo` route** — server-side upload fotky do Supabase Storage bucketu `menu-photos`. Používá `SUPABASE_SERVICE_ROLE_KEY` (admin klient) — obchází Storage RLS. Vstup: `{ base64: string, pubId: string }` JSON. Výstup: `{ url: string }` s cache-busting query `?t=timestamp`. Soubor se ukládá jako `{pubId}.jpg` s `upsert: true`.
+- **Supabase Storage + `sb_publishable_` klíč** — nový formát Supabase klíče (`sb_publishable_xxx`) **NENÍ JWT**. Supabase PostgREST (DB) ho akceptuje, ale Storage API vyžaduje Bearer JWT → vrátí 403 „Invalid Compact JWS". Jedinou funkční variantou je server-side upload přes `SUPABASE_SERVICE_ROLE_KEY`. Nikdy nepokoušej client-side Storage upload s `sb_publishable_` klíčem.
+- **`next.config.js` remotePatterns** — hostname pro Next.js `<Image>` optimalizaci se derivuje dynamicky: `new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co').hostname`. Pattern: `{ protocol: 'https', hostname, pathname: '/storage/v1/object/public/**' }`.
+- **Fotka ceníku v `settings/page.tsx`** — thumbnail se zobrazí pod CENÍK headerem pokud `pub?.menu_photo_url` existuje. Používá Next.js `<Image>` (ne `<img>`), kliknutí otevře plnou fotku v nové záložce.
 
 ---
 
@@ -257,6 +264,7 @@ create table pubs (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   address text,
+  menu_photo_url text,          -- ← nullable, public URL fotky ceníku (migrace 005)
   created_at timestamptz default now()
 );
 
@@ -305,11 +313,15 @@ create table drink_logs (
 | `002_drink_logs_nullable_drink_id.sql` | `drink_id` → nullable + ON DELETE SET NULL (bylo RESTRICT) |
 | `003_disable_rls.sql` | Vypíná RLS na všech tabulkách (bez auth, DELETE bylo blokováno) |
 | `004_fix_sessions_pub_id_cascade.sql` | `sessions_pub_id_fkey` → CASCADE (bylo NO ACTION, blokovalo DELETE pubs) |
+| `005_add_menu_photo_url_to_pubs.sql` | `pubs.menu_photo_url text` — nullable sloupec pro URL fotky ceníku |
+| `006_storage_menu_photos_policies.sql` | Storage RLS policies pro bucket `menu-photos` (INSERT/UPDATE/DELETE pro anon) |
+| `007_fix_storage_policies.sql` | Nahradil anon-specific policies role-agnostickými (nepomohlo — viz past níže) |
 
 ### Pasti při práci s DB:
 - **`IF NOT EXISTS` v migraci nepřepíše existující tabulku** — pokud tabulka vznikla přes dashboard, FK constraints mohou mít jiná pravidla než v SQL. Vždy ověř přes `information_schema.referential_constraints`.
 - **RLS bez politik = tiché selhání DELETE** — Supabase má RLS enabled by default pro nové tabulky. DELETE vrátí HTTP 204 ale nesmaže nic. Používej `DISABLE ROW LEVEL SECURITY` nebo přidej policies.
 - **Správný connection string pro `npx supabase db push`:** `postgresql://postgres:[heslo]@db.[ref].supabase.co:5432/postgres` (přímé připojení, NE pooler na portu 6543).
+- **`sb_publishable_` klíč nefunguje se Supabase Storage** — Storage API vyžaduje JWT Bearer token. Nový formát klíče `sb_publishable_xxx` není JWT → Storage vrátí 403 „Invalid Compact JWS". PostgREST (DB operace) funguje normálně. Řešení: vždy uploaduj přes server-side route s `SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 
@@ -322,6 +334,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ANTHROPIC_API_KEY=...               # pouze server-side, nikdy NEXT_PUBLIC_
 GOOGLE_VISION_API_KEY=...           # pouze server-side, Google Cloud Console
 NEXT_PUBLIC_MAPTILER_KEY=...        # veřejný klíč pro MapTiler dlaždice (cloud.maptiler.com)
+SUPABASE_SERVICE_ROLE_KEY=...       # pouze server-side! Pro upload do Storage (obchází RLS)
 ```
 
 **Nikdy neposílej API klíče na klienta.** Vždy přes `/api/scan` route.
@@ -459,6 +472,7 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - ❌ `ON DELETE RESTRICT` na `drink_logs.drink_id` — používej `ON DELETE SET NULL` (jinak mazání ceníku selže pokud existují záznamy pití)
 - ❌ `createClientComponentClient` z `@supabase/auth-helpers-nextjs` — balíček není nainstalován, použij singleton `import { supabase } from '@/lib/supabase'`
 - ❌ `<Modal>` jako wrapper pro overlay nad `PubFinderModal` — `<Modal>` má `z-[60]`, bylo by schované. Použij vlastní `div` s vyšším z-indexem (viz z-index hierarchie výše)
+- ❌ Client-side Supabase Storage upload s `sb_publishable_` klíčem — klíč není JWT, Storage API ho odmítne s 403. Vždy uploaduj přes `/api/upload-menu-photo` (server-side s `SUPABASE_SERVICE_ROLE_KEY`)
 
 ---
 
@@ -495,6 +509,11 @@ Auto-dismiss: 3 sekundy. Animace: slide-down + fade-in.
 - ✅ `lib/maptiler-places.ts` — 8 kategorií (pub, biergarten, bar, brewery, night_club, restaurant, cafe, fast_food), Haversine dedup, priority sort, deduplicateAndSort() na všech výsledcích, filterPubsByText, debounce
 - ✅ Typy `MapBounds` a `MapPub` v `src/types/index.ts` (MapPub.tags s category/datasource)
 - ✅ `ManualPubAddModal.tsx` — ruční přidání hospody přímo do Supabase, z-[80], useEffect prefill sync
+- ✅ Fotka ceníku — scan ukládá komprimovaný JPEG do Supabase Storage (`menu-photos/{pubId}.jpg`), URL v `pubs.menu_photo_url`, thumbnail v `settings/page.tsx`, mazání při `clearAllDrinks` a `closeSession`, smazání při delete pubu
+- ✅ `/api/upload-menu-photo` — server-side upload route (service role key, obchází Storage RLS)
+- ✅ `next.config.js` remotePatterns — Supabase Storage hostname pro Next.js `<Image>`, derivovaný dynamicky z env
+- ✅ `updateMenuPhoto` v SessionContext — ukládá URL fotky do DB + state
+- ✅ Onboarding search placeholder zkrácen na „Hledej…" (bylo přetékalo na úzkých telefonech)
 
 ## Co zbývá implementovat
 
