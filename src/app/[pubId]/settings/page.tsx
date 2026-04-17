@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, Pencil, Trash2, ScanLine, Save, Eraser } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
@@ -185,11 +186,13 @@ export default function SettingsPage({
               href={pub.menu_photo_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block mt-2 mb-1"
+              className="block mt-2 mb-1 active:scale-[0.98] transition-transform duration-75"
             >
-              <img
+              <Image
                 src={pub.menu_photo_url}
                 alt="Fotka ceníku"
+                width={800}
+                height={192}
                 className="w-full rounded-xl object-cover max-h-48"
               />
             </a>
