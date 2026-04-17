@@ -297,8 +297,8 @@ export function SessionProvider({
           name,
           avatar_color: name,
         }
-        const users = [...state.users, user]
-        LS.set(LS_KEYS.users, users)
+        const existing = LS.get<SessionUser[]>(LS_KEYS.users, [])
+        LS.set(LS_KEYS.users, [...existing, user])
         dispatch({ type: 'ADD_USER', payload: user })
         return
       }
@@ -308,33 +308,33 @@ export function SessionProvider({
         .select().single()
       if (!error && data) dispatch({ type: 'ADD_USER', payload: data })
     },
-    [state.session, state.users, isPro]
+    [state.session, isPro]
   )
 
   const removeUser = useCallback(
     async (id: string) => {
       if (!isPro) {
-        const users = state.users.filter((u) => u.id !== id)
-        LS.set(LS_KEYS.users, users)
+        const existing = LS.get<SessionUser[]>(LS_KEYS.users, [])
+        LS.set(LS_KEYS.users, existing.filter((u) => u.id !== id))
       } else {
         await supabase.from('session_users').delete().eq('id', id)
       }
       dispatch({ type: 'REMOVE_USER', payload: id })
     },
-    [state.users, isPro]
+    [isPro]
   )
 
   const updateUser = useCallback(
     async (id: string, name: string) => {
       if (!isPro) {
-        const users = state.users.map((u) => u.id === id ? { ...u, name } : u)
-        LS.set(LS_KEYS.users, users)
+        const existing = LS.get<SessionUser[]>(LS_KEYS.users, [])
+        LS.set(LS_KEYS.users, existing.map((u) => u.id === id ? { ...u, name } : u))
       } else {
         await supabase.from('session_users').update({ name }).eq('id', id)
       }
       dispatch({ type: 'UPDATE_USER', payload: { id, name } })
     },
-    [state.users, isPro]
+    [isPro]
   )
 
   const addDrinks = useCallback(
@@ -349,8 +349,8 @@ export function SessionProvider({
           price_large: item.priceLarge,
           created_at: new Date().toISOString(),
         }))
-        const drinks = [...state.drinks, ...newDrinks]
-        LS.set(LS_KEYS.drinks, drinks)
+        const existing = LS.get<Drink[]>(LS_KEYS.drinks, [])
+        LS.set(LS_KEYS.drinks, [...existing, ...newDrinks])
         dispatch({ type: 'ADD_DRINKS', payload: newDrinks })
         return
       }
@@ -363,17 +363,18 @@ export function SessionProvider({
       const { data, error } = await supabase.from('drinks').insert(rows).select()
       if (!error && data) dispatch({ type: 'ADD_DRINKS', payload: data })
     },
-    [state.pub, state.drinks, isPro]
+    [state.pub, isPro]
   )
 
   const updateDrink = useCallback(
     async (id: string, name: string, priceSmall: number | null, priceLarge: number | null) => {
       if (!isPro) {
-        const drinks = state.drinks.map((d) =>
+        const existing = LS.get<Drink[]>(LS_KEYS.drinks, [])
+        const next = existing.map((d) =>
           d.id === id ? { ...d, name, price_small: priceSmall, price_large: priceLarge } : d
         )
-        LS.set(LS_KEYS.drinks, drinks)
-        const updated = drinks.find((d) => d.id === id)!
+        LS.set(LS_KEYS.drinks, next)
+        const updated = next.find((d) => d.id === id)!
         dispatch({ type: 'UPDATE_DRINK', payload: updated })
         return
       }
@@ -383,20 +384,20 @@ export function SessionProvider({
         .eq('id', id).select().single()
       if (!error && data) dispatch({ type: 'UPDATE_DRINK', payload: data })
     },
-    [state.drinks, isPro]
+    [isPro]
   )
 
   const removeDrink = useCallback(
     async (id: string) => {
       if (!isPro) {
-        const drinks = state.drinks.filter((d) => d.id !== id)
-        LS.set(LS_KEYS.drinks, drinks)
+        const existing = LS.get<Drink[]>(LS_KEYS.drinks, [])
+        LS.set(LS_KEYS.drinks, existing.filter((d) => d.id !== id))
       } else {
         await supabase.from('drinks').delete().eq('id', id)
       }
       dispatch({ type: 'REMOVE_DRINK', payload: id })
     },
-    [state.drinks, isPro]
+    [isPro]
   )
 
   const clearAllDrinks = useCallback(
@@ -404,6 +405,8 @@ export function SessionProvider({
       if (!state.pub) return
       if (!isPro) {
         LS.set(LS_KEYS.drinks, [])
+        const pub = LS.get<Pub | null>(LS_KEYS.pub, null)
+        if (pub) LS.set(LS_KEYS.pub, { ...pub, menu_photo_url: null })
       } else {
         await supabase.from('drinks').delete().eq('pub_id', state.pub.id)
         await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
@@ -460,8 +463,8 @@ export function SessionProvider({
           unit_price: unitPrice,
           logged_at: new Date().toISOString(),
         }
-        const logs = [...state.logs, log]
-        LS.set(LS_KEYS.logs, logs)
+        const existing = LS.get<DrinkLog[]>(LS_KEYS.logs, [])
+        LS.set(LS_KEYS.logs, [...existing, log])
         dispatch({ type: 'ADD_LOG', payload: log })
         return
       }
@@ -490,22 +493,27 @@ export function SessionProvider({
         dispatch({ type: 'ADD_LOG', payload: data })
       }
     },
-    [state.session, state.logs, isPro]
+    [state.session, isPro]
   )
 
   const decrementDrink = useCallback(
     async (userId: string, drinkId: string) => {
+      if (!isPro) {
+        const allLogs = LS.get<DrinkLog[]>(LS_KEYS.logs, [])
+        const lastLog = [...allLogs]
+          .filter((l) => l.session_user_id === userId && l.drink_id === drinkId)
+          .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())[0]
+        if (!lastLog) return
+        LS.set(LS_KEYS.logs, allLogs.filter((l) => l.id !== lastLog.id))
+        dispatch({ type: 'REMOVE_LOG', payload: lastLog.id })
+        return
+      }
+
       const lastLog = [...state.logs]
         .filter((l) => l.session_user_id === userId && l.drink_id === drinkId)
         .sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime())[0]
       if (!lastLog) return
-
-      if (!isPro) {
-        const logs = state.logs.filter((l) => l.id !== lastLog.id)
-        LS.set(LS_KEYS.logs, logs)
-      } else {
-        await supabase.from('drink_logs').delete().eq('id', lastLog.id)
-      }
+      await supabase.from('drink_logs').delete().eq('id', lastLog.id)
       dispatch({ type: 'REMOVE_LOG', payload: lastLog.id })
     },
     [state.logs, isPro]
