@@ -32,7 +32,7 @@ type Action =
   | { type: 'ADD_DRINKS'; payload: Drink[] }
   | { type: 'UPDATE_DRINK'; payload: Drink }
   | { type: 'REMOVE_DRINK'; payload: string }
-  | { type: 'UPDATE_PUB'; payload: { name: string; address: string | null } }
+  | { type: 'UPDATE_PUB'; payload: Partial<Pick<Pub, 'name' | 'address' | 'menu_photo_url'>> }
   | { type: 'ADD_LOG'; payload: DrinkLog }
   | { type: 'REMOVE_LOG'; payload: string }
   | { type: 'CLOSE_SESSION'; payload: string }
@@ -114,6 +114,7 @@ interface SessionContextValue extends State {
   removeDrink: (id: string) => Promise<void>
   clearAllDrinks: () => Promise<void>
   updatePub: (name: string, address: string | null) => Promise<void>
+  updateMenuPhoto: (url: string | null) => Promise<void>
   incrementDrink: (userId: string, drink: Drink) => Promise<void>
   decrementDrink: (userId: string, drinkId: string) => Promise<void>
   closeSession: () => Promise<void>
@@ -141,6 +142,7 @@ const SessionContext = createContext<SessionContextValue>({
   removeDrink: async () => {},
   clearAllDrinks: async () => {},
   updatePub: async () => {},
+  updateMenuPhoto: async () => {},
   incrementDrink: async () => {},
   decrementDrink: async () => {},
   closeSession: async () => {},
@@ -301,7 +303,10 @@ export function SessionProvider({
   const clearAllDrinks = useCallback(async () => {
     if (!state.pub) return
     await supabase.from('drinks').delete().eq('pub_id', state.pub.id)
+    await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
+    await supabase.from('pubs').update({ menu_photo_url: null }).eq('id', state.pub.id)
     dispatch({ type: 'CLEAR_DRINKS' })
+    dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
   }, [state.pub])
 
   const updatePub = useCallback(
@@ -312,6 +317,12 @@ export function SessionProvider({
     },
     [state.pub]
   )
+
+  const updateMenuPhoto = useCallback(async (url: string | null) => {
+    if (!state.pub) return
+    await supabase.from('pubs').update({ menu_photo_url: url }).eq('id', state.pub.id)
+    dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: url } })
+  }, [state.pub])
 
   const addDrinks = useCallback(
     async (
@@ -394,8 +405,13 @@ export function SessionProvider({
       .from('sessions')
       .update({ closed_at: closedAt })
       .eq('id', state.session.id)
+    if (state.pub) {
+      await supabase.storage.from('menu-photos').remove([`${state.pub.id}.jpg`])
+      await supabase.from('pubs').update({ menu_photo_url: null }).eq('id', state.pub.id)
+      dispatch({ type: 'UPDATE_PUB', payload: { menu_photo_url: null } })
+    }
     dispatch({ type: 'CLOSE_SESSION', payload: closedAt })
-  }, [state.session])
+  }, [state.session, state.pub])
 
   // ── Derived ────────────────────────────────────────────────
 
@@ -471,6 +487,7 @@ export function SessionProvider({
         removeDrink,
         clearAllDrinks,
         updatePub,
+        updateMenuPhoto,
         incrementDrink,
         decrementDrink,
         closeSession,
