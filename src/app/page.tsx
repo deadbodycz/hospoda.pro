@@ -13,6 +13,7 @@ import { BottomNav } from '@/components/BottomNav'
 import { useToast } from '@/components/ui/Toast'
 import type { Pub } from '@/types'
 import { useSubscription } from '@/contexts/SubscriptionContext'
+import { ProGate } from '@/components/ProGate'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -390,11 +391,15 @@ export default function OnboardingPage() {
       </Modal>
 
       {/* Pub finder modal */}
-      <PubFinderModal
-        open={showPubFinderModal}
-        onClose={() => setShowPubFinderModal(false)}
-        onSelect={handlePubFinderSelect}
-      />
+      {showPubFinderModal && (
+        <ProGate feature="map">
+          <PubFinderModal
+            open={showPubFinderModal}
+            onClose={() => setShowPubFinderModal(false)}
+            onSelect={handlePubFinderSelect}
+          />
+        </ProGate>
+      )}
 
       {/* New pub modal */}
       <Modal

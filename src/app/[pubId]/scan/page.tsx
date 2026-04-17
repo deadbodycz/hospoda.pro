@@ -9,6 +9,7 @@ import { ScanModal } from '@/components/ScanModal'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useToast } from '@/components/ui/Toast'
+import { ProGate } from '@/components/ProGate'
 import type { ScannedItem } from '@/types'
 
 type PageState = 'idle' | 'processing' | 'results' | 'error'
@@ -108,6 +109,7 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
   }
 
   return (
+    <ProGate feature="scan">
     <div className="min-h-[100dvh] bg-background text-on-background pb-32">
       {/* Header */}
       <header className="fixed top-0 w-full h-12 z-50 bg-zinc-950/60 backdrop-blur-md border-b-2 border-zinc-800/20 flex justify-between items-center px-6">
@@ -237,5 +239,6 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
 
       <BottomNav pubId={params.pubId} />
     </div>
+    </ProGate>
   )
 }
