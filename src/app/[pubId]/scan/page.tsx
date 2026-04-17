@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, ImagePlus, ScanLine, Loader2, X } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
-import { supabase } from '@/lib/supabase'
 import { ScanModal } from '@/components/ScanModal'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -79,21 +78,15 @@ export default function ScanPage({ params }: { params: { pubId: string } }) {
         setPageState('error')
         return
       }
-      // Upload fotky do Storage (tiché selhání — sken pokračuje i bez fotky)
+      // Upload fotky přes server (admin client obchází Storage RLS)
       try {
-        // Použijeme komprimovanou verzi (výstup compressImage), ne originální soubor
-        const byteChars = atob(base64)
-        const byteArr = new Uint8Array(byteChars.length)
-        for (let i = 0; i < byteChars.length; i++) {
-          byteArr[i] = byteChars.charCodeAt(i)
-        }
-        const blob = new Blob([byteArr], { type: 'image/jpeg' })
-        const { error: uploadError } = await supabase.storage
-          .from('menu-photos')
-          .upload(`${params.pubId}.jpg`, blob, { upsert: true, contentType: 'image/jpeg' })
-        if (!uploadError) {
-          const { data } = supabase.storage.from('menu-photos').getPublicUrl(`${params.pubId}.jpg`)
-          const url = `${data.publicUrl}?t=${Date.now()}`
+        const uploadRes = await fetch('/api/upload-menu-photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64, pubId: params.pubId }),
+        })
+        if (uploadRes.ok) {
+          const { url } = await uploadRes.json() as { url: string }
           await updateMenuPhoto(url)
         }
       } catch {
