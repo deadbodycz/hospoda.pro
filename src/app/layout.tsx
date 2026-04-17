@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ToastProvider } from '@/components/ui/Toast'
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 
 export const metadata: Metadata = {
   title: 'Hospoda.pro',
@@ -46,11 +47,13 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background text-on-surface font-sans selection:bg-primary/30">
-        <ThemeProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </ThemeProvider>
+        <SubscriptionProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </ThemeProvider>
+        </SubscriptionProvider>
         <div className="grain-texture fixed inset-0 z-0 pointer-events-none" aria-hidden />
       </body>
     </html>
