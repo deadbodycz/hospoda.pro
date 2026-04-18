@@ -1,10 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { ScannedItem } from '@/types'
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  throw new Error('ANTHROPIC_API_KEY není nastavený')
+function getClient(): Anthropic {
+  const key = process.env.ANTHROPIC_API_KEY
+  if (!key) throw new Error('ANTHROPIC_API_KEY není nastavený')
+  return new Anthropic({ apiKey: key })
 }
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 const PARSE_PROMPT = `Z níže uvedeného textu z ceníku nápojů extrahuj seznam nápojů.
 Vrať POUZE JSON v tomto formátu, bez markdown:
@@ -25,6 +26,7 @@ Pravidla:
 export async function parseMenuText(ocrText: string): Promise<ScannedItem[]> {
   if (!ocrText.trim()) return []
 
+  const client = getClient()
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2048,
