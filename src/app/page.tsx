@@ -272,7 +272,7 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               ) : filtered.length === 0 ? (
-                <EmptyState onAdd={() => setShowNewPubModal(true)} />
+                <EmptyState onAdd={() => setShowNewPubModal(true)} query={query} />
               ) : (
                 <div className="grid grid-cols-1 gap-4">
                   {filtered.map((pub) => (
@@ -294,12 +294,12 @@ export default function OnboardingPage() {
         )}
       </main>
 
-      {/* FAB — pouze pro Pro uživatele */}
+      {/* FAB — pouze pro Pro uživatele, nad BottomNav */}
       {isPro && !authLoading && (
         <button
           onClick={() => setShowNewPubModal(true)}
-          className="fixed bottom-6 right-4 flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-3 rounded-xl accent-shadow active:translate-y-0.5 transition-all text-sm z-40"
-          style={{ bottom: 'max(env(safe-area-inset-bottom) + 16px, 24px)' }}
+          className="fixed right-4 flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-3 rounded-xl accent-shadow active:translate-y-0.5 transition-all text-sm z-40"
+          style={{ bottom: 'calc(max(env(safe-area-inset-bottom), 12px) + 72px + 12px)' }}
           aria-label="Přidat novou hospodu"
         >
           <Plus className="w-4 h-4" />
@@ -494,26 +494,30 @@ function PubCard({
   )
 }
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({ onAdd, query }: { onAdd: () => void; query: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-      <div className="relative w-32 h-32 flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center py-12 text-center space-y-5">
+      <div className="relative w-24 h-24 flex items-center justify-center">
         <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl" />
-        <div className="relative w-24 h-24 bg-surface-container-highest border-2 border-outline-variant rounded-xl flex items-center justify-center">
-          <MapPin className="w-10 h-10 text-outline-variant" />
+        <div className="relative w-20 h-20 bg-surface-container-highest border-2 border-outline-variant rounded-xl flex items-center justify-center">
+          <MapPin className="w-8 h-8 text-outline-variant" />
         </div>
       </div>
-      <div className="space-y-2">
-        <h3 className="font-bold text-xl text-on-surface">Žádné hospody</h3>
+      <div className="space-y-1.5">
+        <h3 className="font-bold text-lg text-on-surface">
+          {query ? 'Nic nenalezeno' : 'Žádné hospody'}
+        </h3>
         <p className="text-on-surface-variant text-sm max-w-[240px] mx-auto">
-          Ještě jsi nepřidal žádnou hospodu. Začni tím, že přidáš svou první.
+          {query
+            ? `Zkus jiný název nebo hospodu přidej ručně.`
+            : 'Přidej svou první hospodu a začni počítat.'}
         </p>
       </div>
       <button
         onClick={onAdd}
-        className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold active:scale-95 transition-all shadow-lg"
+        className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold active:scale-95 transition-all accent-shadow text-sm"
       >
-        Přidat první hospodu
+        + Přidat hospodu ručně
       </button>
     </div>
   )
