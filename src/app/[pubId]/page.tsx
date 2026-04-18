@@ -142,13 +142,15 @@ function NoDrinksPrompt({ pubId }: { pubId: string }) {
     <div className="mt-8 text-center py-8 space-y-3">
       <Beer className="w-10 h-10 text-outline mx-auto" />
       <p className="text-on-surface-variant text-sm">Zatím žádné nápoje.</p>
-      <Link
-        href={`/${pubId}/scan`}
-        className="inline-flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-2.5 rounded-xl accent-shadow text-sm"
-      >
-        <ScanLine className="w-4 h-4" />
-        Skenovat ceník
-      </Link>
+      <div className="flex flex-col items-center gap-2">
+        <Link
+          href={`/${pubId}/settings`}
+          className="inline-flex items-center gap-2 bg-primary text-on-primary font-bold px-5 py-2.5 rounded-xl accent-shadow text-sm"
+        >
+          <ScanLine className="w-4 h-4" />
+          Přidat nápoj
+        </Link>
+      </div>
     </div>
   )
 }

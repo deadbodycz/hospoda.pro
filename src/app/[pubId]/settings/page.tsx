@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Pencil, Trash2, ScanLine, Save, Eraser } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, ScanLine, Save, Eraser, Plus } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -16,7 +16,7 @@ export default function SettingsPage({
 }: {
   params: { pubId: string }
 }) {
-  const { pub, drinks, loading, updatePub, updateDrink, removeDrink, clearAllDrinks } = useSession()
+  const { pub, drinks, loading, updatePub, addDrinks, updateDrink, removeDrink, clearAllDrinks } = useSession()
   const { toast } = useToast()
 
   // Pub editing
@@ -38,6 +38,27 @@ export default function SettingsPage({
     setSavingPub(false)
     setEditingPub(false)
     toast('Hospoda byla uložena.', 'success')
+  }
+
+  // Add drink
+  const [addingDrink, setAddingDrink] = useState(false)
+  const [newDrinkName, setNewDrinkName] = useState('')
+  const [newDrinkPriceSmall, setNewDrinkPriceSmall] = useState('')
+  const [newDrinkPriceLarge, setNewDrinkPriceLarge] = useState('')
+  const [savingNewDrink, setSavingNewDrink] = useState(false)
+
+  async function handleAddDrink() {
+    if (!newDrinkName.trim()) return
+    setSavingNewDrink(true)
+    const priceSmall = newDrinkPriceSmall ? parseFloat(newDrinkPriceSmall) : null
+    const priceLarge = newDrinkPriceLarge ? parseFloat(newDrinkPriceLarge) : null
+    await addDrinks([{ name: newDrinkName.trim(), priceSmall, priceLarge }])
+    setSavingNewDrink(false)
+    setAddingDrink(false)
+    setNewDrinkName('')
+    setNewDrinkPriceSmall('')
+    setNewDrinkPriceLarge('')
+    toast('Nápoj byl přidán.', 'success')
   }
 
   // Drink editing
@@ -171,12 +192,19 @@ export default function SettingsPage({
                   Smazat vše
                 </button>
               )}
-              <Link
-                href={`/${params.pubId}/scan`}
+              <button
+                onClick={() => setAddingDrink(true)}
                 className="flex items-center gap-1.5 text-primary text-xs font-bold"
               >
+                <Plus className="w-4 h-4" />
+                Přidat
+              </button>
+              <Link
+                href={`/${params.pubId}/scan`}
+                className="flex items-center gap-1.5 text-on-surface-variant text-xs font-medium"
+              >
                 <ScanLine className="w-4 h-4" />
-                Přeskenovat
+                Skenovat
               </Link>
             </div>
           </div>
@@ -200,7 +228,7 @@ export default function SettingsPage({
 
           {drinks.length === 0 ? (
             <p className="text-on-surface-variant text-sm text-center py-6">
-              Žádné nápoje. Naskenuj ceník!
+              Žádné nápoje. Přidej ručně nebo naskenuj ceník.
             </p>
           ) : (
             <div className="bg-surface-container border-2 border-outline-variant/20 rounded-xl overflow-hidden">
@@ -243,6 +271,73 @@ export default function SettingsPage({
       </main>
 
       <BottomNav pubId={params.pubId} />
+
+      {/* Add drink modal */}
+      <Modal
+        open={addingDrink}
+        onClose={() => { setAddingDrink(false); setNewDrinkName(''); setNewDrinkPriceSmall(''); setNewDrinkPriceLarge('') }}
+        title="Přidat nápoj"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="font-mono text-[10px] uppercase text-outline mb-2 block tracking-widest">
+              Název *
+            </label>
+            <input
+              autoFocus
+              value={newDrinkName}
+              onChange={(e) => setNewDrinkName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddDrink()}
+              placeholder="např. Pilsner Urquell 0,5l"
+              className="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl p-3 focus:border-primary focus:outline-none text-on-surface text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-mono text-[10px] uppercase text-outline mb-2 block tracking-widest">
+                Cena malá (Kč)
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={newDrinkPriceSmall}
+                onChange={(e) => setNewDrinkPriceSmall(e.target.value)}
+                placeholder="38"
+                className="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl p-3 focus:border-primary focus:outline-none text-on-surface text-sm"
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase text-outline mb-2 block tracking-widest">
+                Cena velká (Kč)
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={newDrinkPriceLarge}
+                onChange={(e) => setNewDrinkPriceLarge(e.target.value)}
+                placeholder="52"
+                className="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl p-3 focus:border-primary focus:outline-none text-on-surface text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setAddingDrink(false); setNewDrinkName(''); setNewDrinkPriceSmall(''); setNewDrinkPriceLarge('') }}
+              className="flex-1 bg-surface-variant text-on-surface-variant font-bold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
+            >
+              Zrušit
+            </button>
+            <button
+              onClick={handleAddDrink}
+              disabled={!newDrinkName.trim() || savingNewDrink}
+              className="flex-1 bg-primary text-on-primary font-bold py-2.5 rounded-xl active:translate-y-0.5 transition-all disabled:opacity-40 text-sm flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              {savingNewDrink ? 'Přidávám…' : 'Přidat'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Edit pub modal */}
       <Modal
