@@ -27,6 +27,26 @@ export default function AccountPage() {
     const trimmed = email.trim()
     if (!trimmed) return
     setSendingLink(true)
+
+    // DEV MODE: bypass email rate limit — generate link directly
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        const res = await fetch('/api/auth/dev-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmed }),
+        })
+        const json = await res.json() as { url?: string; error?: string }
+        if (json.url) {
+          setSendingLink(false)
+          window.location.href = json.url
+          return
+        }
+      } catch {
+        // fall through to normal flow
+      }
+    }
+
     const { error } = await signInWithEmail(trimmed)
     setSendingLink(false)
     if (error) {
