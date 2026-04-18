@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { LogOut, CreditCard, Mail } from 'lucide-react'
+import { LogOut, CreditCard, Mail, ArrowLeft } from 'lucide-react'
 import { useSubscription } from '@/contexts/SubscriptionContext'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
@@ -134,7 +134,16 @@ export default function AccountPage() {
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col items-center px-4 pt-16 pb-8">
       <div className="w-full max-w-sm space-y-4">
-        <h1 className="text-xl font-bold text-on-surface">Účet</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-on-surface">Účet</h1>
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-1.5 text-sm text-on-surface-variant active:opacity-70 transition-opacity"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Do aplikace
+          </button>
+        </div>
 
         <div className="bg-surface-container rounded-2xl p-5 space-y-2">
           <p className="text-xs text-on-surface-variant uppercase tracking-wider">Email</p>
@@ -177,6 +186,15 @@ export default function AccountPage() {
             </div>
           )}
         </div>
+
+        {isPro && (
+          <button
+            onClick={() => router.push('/')}
+            className="w-full bg-primary text-on-primary rounded-xl py-3 text-sm font-medium active:scale-95 transition-transform accent-shadow"
+          >
+            Vybrat hospodu →
+          </button>
+        )}
 
         <button
           onClick={handleSignOut}
