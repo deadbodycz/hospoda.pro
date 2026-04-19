@@ -148,6 +148,16 @@ const KEYWORD_MAP: [string[], string][] = [
   [['kveik', 'farmhouse lager'], 'cz_pale_lager'],
 ]
 
+export function cleanBeerNameForSearch(name: string): string {
+  return name
+    .replace(/\d+[,.]?\d*\s*(ml|cl|dl|l)\b/gi, '')
+    .replace(/\b0[,.]([235])\s*l\b/gi, '')
+    .replace(/\d+\s*kč/gi, '')
+    .replace(/\d+°/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function inferStyleFromBeerName(beerName: string): BeerStyle | undefined {
   return inferStyleEntryFromBeerName(beerName)?.[1]
 }

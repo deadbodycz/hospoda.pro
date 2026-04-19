@@ -126,41 +126,37 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex items-center justify-between">
-                  <button
-                    onClick={() => setEditing(i)}
-                    className="flex-1 flex flex-col text-left min-w-0"
-                    aria-label={`Upravit ${item.name}`}
-                  >
-                    <p className="font-bold text-on-surface text-sm truncate">{item.name}</p>
-                    <p className="font-mono text-[10px] text-primary uppercase tracking-widest mt-0.5">
-                      Klepnutím upravíš
-                    </p>
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setInfoBeer(item.name) }}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high active:scale-90 transition-all flex-shrink-0 ml-1"
-                    aria-label={`Info o ${item.name}`}
-                  >
-                    <Info className="w-4 h-4 text-on-surface-variant" />
-                  </button>
-                  <div className="flex gap-4 ml-2">
-                    {item.priceSmall != null && (
-                      <div className="flex flex-col items-end">
-                        <span className="font-mono text-[10px] text-outline uppercase">Malá</span>
-                        <span className="font-mono font-bold text-on-surface tabular-nums">
-                          {Math.round(item.priceSmall)}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setEditing(i)}
+                      className="flex-1 min-w-0 text-left"
+                      aria-label={`Upravit ${item.name}`}
+                    >
+                      <p className="font-bold text-on-surface text-sm truncate">{item.name}</p>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setInfoBeer(item.name) }}
+                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-surface-container-high active:scale-90 transition-all flex-shrink-0"
+                      aria-label={`Info o ${item.name}`}
+                    >
+                      <Info className="w-3.5 h-3.5 text-on-surface-variant" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="font-mono text-[10px] text-primary uppercase tracking-widest">Klepnutím upravíš</p>
+                    <div className="flex gap-3">
+                      {item.priceSmall != null && (
+                        <span className="font-mono text-xs text-on-surface tabular-nums">
+                          {Math.round(item.priceSmall)}<span className="text-outline text-[9px] ml-0.5">m</span>
                         </span>
-                      </div>
-                    )}
-                    {item.priceLarge != null && (
-                      <div className="flex flex-col items-end">
-                        <span className="font-mono text-[10px] text-outline uppercase">Velká</span>
-                        <span className="font-mono font-bold text-on-surface tabular-nums">
-                          {Math.round(item.priceLarge)}
+                      )}
+                      {item.priceLarge != null && (
+                        <span className="font-mono text-xs text-on-surface tabular-nums">
+                          {Math.round(item.priceLarge)}<span className="text-outline text-[9px] ml-0.5">v</span>
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Pencil, Trash2, ScanLine, Save, Eraser } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, ScanLine, Save, Eraser, Info } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
 import { BottomNav } from '@/components/BottomNav'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import BeerInfoSheet from '@/components/BeerInfoSheet'
 import type { Drink } from '@/types'
 
 export default function SettingsPage({
@@ -50,6 +51,9 @@ export default function SettingsPage({
   // Drink delete confirm
   const [deletingDrink, setDeletingDrink] = useState<Drink | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // Beer info sheet
+  const [infoBeer, setInfoBeer] = useState<string | null>(null)
 
   // Clear all drinks
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false)
@@ -220,6 +224,13 @@ export default function SettingsPage({
                     </div>
                     <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                       <button
+                        onClick={() => setInfoBeer(drink.name)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
+                        aria-label={`Info o ${drink.name}`}
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => openDrinkEdit(drink)}
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-90 text-outline"
                         aria-label={`Upravit ${drink.name}`}
@@ -243,6 +254,7 @@ export default function SettingsPage({
       </main>
 
       <BottomNav pubId={params.pubId} />
+      <BeerInfoSheet beerName={infoBeer} onClose={() => setInfoBeer(null)} />
 
       {/* Edit pub modal */}
       <Modal

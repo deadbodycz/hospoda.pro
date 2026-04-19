@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { X, ExternalLink } from 'lucide-react'
 import type { BeerInfoResult } from '@/types'
-import { inferStyleEntryFromBeerName, getBeerStyleById } from '@/lib/beer-styles'
+import { inferStyleEntryFromBeerName, getBeerStyleById, cleanBeerNameForSearch } from '@/lib/beer-styles'
 import SrmColorSwatch from './SrmColorSwatch'
 
 interface BeerInfoSheetProps {
@@ -186,24 +186,31 @@ export default function BeerInfoSheet({ beerName, onClose }: BeerInfoSheetProps)
 
               {/* CTA tlačítka */}
               <div className="flex gap-2 pt-2">
-                <a
-                  href={`https://untappd.com/search?q=${encodeURIComponent(beerName ?? '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-surface-container-high border-2 border-outline-variant rounded-xl py-3 text-sm font-bold text-on-surface active:scale-95 transition-all"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Untappd
-                </a>
-                <a
-                  href={`https://www.google.com/search?q=${encodeURIComponent((beerName ?? '') + ' pivo')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-surface-container-high border-2 border-outline-variant rounded-xl py-3 text-sm font-bold text-on-surface active:scale-95 transition-all"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Google
-                </a>
+                {(() => {
+                  const q = cleanBeerNameForSearch(beerName ?? '')
+                  return (
+                    <>
+                      <a
+                        href={`https://untappd.com/search?q=${encodeURIComponent(q)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-surface-container-high border-2 border-outline-variant rounded-xl py-3 text-sm font-bold text-on-surface active:scale-95 transition-all"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Untappd
+                      </a>
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent(q + ' pivo')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-surface-container-high border-2 border-outline-variant rounded-xl py-3 text-sm font-bold text-on-surface active:scale-95 transition-all"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Google
+                      </a>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           ) : null}
