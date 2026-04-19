@@ -46,6 +46,16 @@ export interface ScannedItem {
   priceLarge: number | null
 }
 
+/** Result from /api/beer-info — info about a specific beer or its style */
+export interface BeerInfoResult {
+  name: string
+  styleId?: string
+  abv: number | null
+  brewery: string | null
+  description: string
+  source: 'ai' | 'fallback'
+}
+
 /** OSM bounding box for Overpass queries */
 export interface Bounds {
   north: number

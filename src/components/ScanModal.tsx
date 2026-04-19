@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, PlusCircle } from 'lucide-react'
+import { X, PlusCircle, Info } from 'lucide-react'
 import type { ScannedItem } from '@/types'
+import BeerInfoSheet from './BeerInfoSheet'
 
 interface ScanModalProps {
   items: ScannedItem[]
@@ -17,6 +18,7 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
   })
   const [editing, setEditing] = useState<number | null>(null)
   const [editValues, setEditValues] = useState<ScannedItem[]>(items.map((i) => ({ ...i })))
+  const [infoBeer, setInfoBeer] = useState<string | null>(null)
 
   function toggle(index: number) {
     setChecked((prev) => {
@@ -124,18 +126,25 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
                   </div>
                 </div>
               ) : (
-                <button
-                  onClick={() => setEditing(i)}
-                  className="flex-1 flex items-center justify-between text-left"
-                  aria-label={`Upravit ${item.name}`}
-                >
-                  <div>
-                    <p className="font-bold text-on-surface text-sm">{item.name}</p>
+                <div className="flex-1 flex items-center justify-between">
+                  <button
+                    onClick={() => setEditing(i)}
+                    className="flex-1 flex flex-col text-left min-w-0"
+                    aria-label={`Upravit ${item.name}`}
+                  >
+                    <p className="font-bold text-on-surface text-sm truncate">{item.name}</p>
                     <p className="font-mono text-[10px] text-primary uppercase tracking-widest mt-0.5">
                       Klepnutím upravíš
                     </p>
-                  </div>
-                  <div className="flex gap-4 ml-4">
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setInfoBeer(item.name) }}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high active:scale-90 transition-all flex-shrink-0 ml-1"
+                    aria-label={`Info o ${item.name}`}
+                  >
+                    <Info className="w-4 h-4 text-on-surface-variant" />
+                  </button>
+                  <div className="flex gap-4 ml-2">
                     {item.priceSmall != null && (
                       <div className="flex flex-col items-end">
                         <span className="font-mono text-[10px] text-outline uppercase">Malá</span>
@@ -153,7 +162,7 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
                       </div>
                     )}
                   </div>
-                </button>
+                </div>
               )}
             </div>
           ))}
@@ -173,6 +182,7 @@ export function ScanModal({ items, onConfirm, onClose }: ScanModalProps) {
           </button>
         </div>
       </div>
+      <BeerInfoSheet beerName={infoBeer} onClose={() => setInfoBeer(null)} />
     </div>
   )
 }
